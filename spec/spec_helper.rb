@@ -1,4 +1,5 @@
 require "bundler/setup"
+require "active_record"
 require "batch_archiving"
 
 RSpec.configure do |config|
