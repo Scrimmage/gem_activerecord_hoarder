@@ -20,7 +20,16 @@ Or install it yourself as:
 
 ## Usage
 
-use only as intended
+To add functionality to a model:
+```
+class ExampleModel < ActiveRecord::Base
+  batch_archivable
+end
+```
+and to use functionality:
+```
+ExampleModel.archive_batch
+```
 
 ## Development
 

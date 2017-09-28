@@ -18,8 +18,8 @@ RSpec.describe BatchArchiving do
         Example
       }
 
-      it "extends with public method .archive_batch" do
-        expect(example_model_class.instance_methods).to include(:archive_batch)
+      it "extends with public class method .archive_batch" do
+        expect(example_model_class.methods).to include(:archive_batch)
       end
     end
   end
