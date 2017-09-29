@@ -10,10 +10,11 @@ RSpec.describe BatchArchiving do
   end
 
   describe "batch_archivable" do
-    context "included in ActiveRecord model" do
+    context "successfully included in ActiveRecord model" do
       let(:example_model_class) {
         class Example < ActiveRecord::Base
           batch_archivable
+          attr_accessor :created_at, :deleted_at
         end
         Example
       }
