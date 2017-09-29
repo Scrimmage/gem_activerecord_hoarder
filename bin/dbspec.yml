@@ -1,0 +1,2 @@
+adapter: postgresql
+database: batch_archiving
