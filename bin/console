@@ -4,6 +4,12 @@ require "bundler/setup"
 
 # require dependencies from gemspec
 require "active_record"
+require "yaml"
+dbspec_location = "dbspec.yml"
+if File.exist? dbspec_location
+  dbspec = YAML.load_file(dbspec_location)
+  ActiveRecord::Base.establish_connection(dbspec)
+end
 
 require "batch_archiving"
 
