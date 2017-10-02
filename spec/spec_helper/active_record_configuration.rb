@@ -1,5 +1,5 @@
 require 'nulldb_rspec'
-include NullDB::RSpec::NullifiedDatabase
+
 NullDB.configure { |ndb|
   def ndb.project_root
     File.join(__dir__, '../../')
