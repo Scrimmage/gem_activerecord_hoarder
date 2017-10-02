@@ -1,4 +1,4 @@
 FactoryGirl.define do
-  factory :example_archivable_record do
+  factory :example do
   end
 end

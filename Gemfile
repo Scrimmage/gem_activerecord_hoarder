@@ -4,7 +4,7 @@ repo_name = "gem_batch_archiving"
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
 group :test do
-  gem 'activerecord-nulldb-adapter'
+  gem 'pg'
   gem 'factory_girl_rails'
 end
 
