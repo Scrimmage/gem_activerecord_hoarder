@@ -1,5 +1,4 @@
-require "batch_archiving/version"
-require "batch_archiving/core"
+Dir.glob(File.join("lib","batch_archiving", "*.rb")).each do |file| require File.expand_path(file) end
 
 module BatchArchiving
   def batch_archivable(**options)
