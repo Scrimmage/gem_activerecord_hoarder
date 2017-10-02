@@ -1,14 +1,9 @@
 require "bundler/setup"
+require "active_record"
 require "batch_archiving"
 
-RSpec.configure do |config|
-  # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
+# configure rspec
+require 'spec_helper/rspec_configuration'
 
-  # Disable RSpec exposing methods globally on `Module` and `main`
-  config.disable_monkey_patching!
-
-  config.expect_with :rspec do |c|
-    c.syntax = :expect
-  end
-end
+# configure active_record
+require 'spec_helper/active_record_configuration'

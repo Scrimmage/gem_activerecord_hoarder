@@ -1,5 +1,10 @@
 require "batch_archiving/version"
+require "batch_archiving/core"
 
 module BatchArchiving
-  # Your code goes here...
+  def batch_archivable(**options)
+    include BatchArchiving::Core
+  end
 end
+
+::ActiveRecord::Base.send :extend, BatchArchiving
