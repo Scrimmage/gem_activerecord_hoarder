@@ -7,7 +7,7 @@ module BatchArchiving::Core
 
   module ClassMethods
     def archive_batch
-      ::BatchArchiving::BatchArchiver.new.archive_batch
+      ::BatchArchiving::BatchArchiver.new(self).archive_batch
     end
   end
 end

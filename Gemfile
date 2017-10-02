@@ -6,6 +6,7 @@ git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 group :test do
   gem 'pg'
   gem 'factory_girl_rails'
+  gem 'timecop'
 end
 
 group :development do

@@ -1,5 +1,6 @@
 class ::BatchArchiving::BatchArchiver
-  def initialize(*args)
+  def initialize(model)
+    @model = model
   end
 
   def archive_batch
