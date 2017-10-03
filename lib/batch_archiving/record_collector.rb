@@ -1,0 +1,3 @@
+class ::BatchArchiving::RecordCollector
+
+end

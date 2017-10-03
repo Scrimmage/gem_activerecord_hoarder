@@ -116,14 +116,18 @@ RSpec.describe BatchArchiving do
     end
   end
 
-  describe "storage" do
-    it "does things" do
+  describe "workflow" do
+    it "fully processes one day before moving on to the next" do
+      expect(false).to be true
+    end
+
+    it "does not delete a record that wasn't successfully archived" do
       expect(false).to be true
     end
   end
 
   describe "archive" do
-    it "works" do
+    it "delegates archiving logic to specialized class" do
       expect(false).to be true
     end
   end

@@ -1,0 +1,3 @@
+class ::BatchArchiving::Storage
+
+end
