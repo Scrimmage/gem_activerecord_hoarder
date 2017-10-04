@@ -1,7 +1,7 @@
 def datetimes_in_range(n, step: 5, start:, stop:)
   seconds_in_range = stop - start
-  seconds_ago = Time.now - stop
-  ((step * n.hours) % seconds_in_range + seconds_ago).seconds.ago
+  seconds_ago = Time.now.getutc - stop
+  ((n*(step.hours+1.minute + 1.second)) % seconds_in_range + seconds_ago).seconds.ago
 end
 
 FactoryGirl.define do
