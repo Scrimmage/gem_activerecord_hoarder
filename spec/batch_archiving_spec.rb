@@ -29,13 +29,6 @@ RSpec.describe BatchArchiving do
         JSON.pretty_generate(group.collect(&:serializable_hash))
       }
     }
-    let(:archive_keys) {
-      @archivable_records.group_by { |item|
-        item.created_at.getutc.to_date
-      } .collect { |date, group|
-        File.join(date.strftime("%Y/%m"), "#{date}.json")
-      }
-    }
 
     around(:each) do |example|
       current_zone = Time.zone
@@ -74,7 +67,6 @@ RSpec.describe BatchArchiving do
       it "archives previous days" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
         expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
-        expect(::BatchArchiving::Storage.get_record_keys).to eq(archive_keys)
       end
     end
 
@@ -126,7 +118,6 @@ RSpec.describe BatchArchiving do
       it "archives one week of fully deleted records" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
         expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
-        expect(::BatchArchiving::Storage.get_record_keys).to eq(archive_keys)
       end
 
       it "stops after one week" do
