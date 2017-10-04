@@ -21,7 +21,22 @@ RSpec.describe BatchArchiving do
     end
   end
 
-  describe "record selection" do
+  describe "record archiving" do
+    let(:archive_data) {
+      @archivable_records.group_by { |item|
+        item.created_at.getutc.to_date
+      } .collect { |date, group|
+        JSON.pretty_generate(group.collect(&:serializable_hash))
+      }
+    }
+    let(:archive_keys) {
+      @archivable_records.group_by { |item|
+        item.created_at.getutc.to_date
+      } .collect { |date, group|
+        File.join(date.strftime("%Y/%m"), "#{date}.json")
+      }
+    }
+
     around(:each) do |example|
       current_zone = Time.zone
       Time.zone = "America/Chicago"
@@ -58,6 +73,8 @@ RSpec.describe BatchArchiving do
 
       it "archives previous days" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
+        expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
+        expect(::BatchArchiving::Storage.get_record_keys).to eq(archive_keys)
       end
     end
 
@@ -108,6 +125,8 @@ RSpec.describe BatchArchiving do
 
       it "archives one week of fully deleted records" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
+        expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
+        expect(::BatchArchiving::Storage.get_record_keys).to eq(archive_keys)
       end
 
       it "stops after one week" do
@@ -117,18 +136,12 @@ RSpec.describe BatchArchiving do
   end
 
   describe "workflow" do
-    it "fully processes one day before moving on to the next" do
-      expect(false).to be true
+    it "fully processes one record batch before moving on to the next" do
+      expect(false).to be true # successive order or collector - serializer - storage
     end
 
     it "does not delete a record that wasn't successfully archived" do
-      expect(false).to be true
-    end
-  end
-
-  describe "archive" do
-    it "delegates archiving logic to specialized class" do
-      expect(false).to be true
+      expect(false).to be true # let archive storage raise error and check record is not deleted
     end
   end
 end
