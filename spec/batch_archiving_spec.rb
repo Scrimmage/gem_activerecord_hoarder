@@ -6,6 +6,16 @@ class Example < ActiveRecord::Base
 end
 
 RSpec.describe BatchArchiving do
+
+  around(:all) do |example|
+    current_zone = Time.zone
+    Time.zone = "America/Chicago"
+    Timecop.freeze((Date.today.beginning_of_week - 3).to_time(:utc).end_of_day) do
+      example.run
+    end
+    Time.zone = current_zone
+  end
+
   it "has a version number" do
     expect(BatchArchiving::VERSION).not_to be nil
   end
@@ -31,18 +41,8 @@ RSpec.describe BatchArchiving do
       }
     }
 
-    around(:each) do |example|
-      current_zone = Time.zone
-      Time.zone = "America/Chicago"
-      Timecop.freeze((Date.today.beginning_of_week + 4).in_time_zone) do
-        example.run
-      end
-      Time.zone = current_zone
-    end
-
     before :each do
       allow(::BatchArchiving::Storage).to receive(:store_archive).and_return(true)
-      Example.archive_batch
     end
 
     context "with records only in current week" do
@@ -60,6 +60,7 @@ RSpec.describe BatchArchiving do
           deleted: true,
           records_date: Date.today
         )
+        Example.archive_batch
       end
 
       it "ignores current day" do
@@ -68,7 +69,7 @@ RSpec.describe BatchArchiving do
 
       it "archives previous days" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
-        expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
+        expect(::BatchArchiving::Storage.retrieve_records_from_archive).to eq(archive_data)
       end
     end
 
@@ -111,6 +112,7 @@ RSpec.describe BatchArchiving do
           end_time: Time.now,
           start_time: Time.now.getutc.beginning_of_week
         )
+        Example.archive_batch
       end
 
       it "skips records from days with active records" do
@@ -119,7 +121,7 @@ RSpec.describe BatchArchiving do
 
       it "archives one week of fully deleted records" do
         expect(Example.unscoped.to_a).not_to include(*@archivable_records)
-        expect(::BatchArchiving::Storage.get_records).to eq(archive_data)
+        expect(::BatchArchiving::Storage.retrieve_records_from_archive).to eq(archive_data)
       end
 
       it "stops after one week" do

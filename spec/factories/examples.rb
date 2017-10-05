@@ -19,8 +19,8 @@ FactoryGirl.define do
 
   factory :examples_in_range, parent: :example do
     transient do
-      end_time 2.weeks.ago
-      start_time Time.now
+      end_time Time.now
+      start_time 2.weeks.ago
       step 5
     end
 

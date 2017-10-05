@@ -1,5 +1,5 @@
 
-RECORD_QUERY = "
+::BatchArchiving::RECORD_QUERY = "
 select *
 from %{table_name}
 where
@@ -69,7 +69,7 @@ class ::BatchArchiving::RecordCollector
   private
 
   def absolute_limit
-    (Date.today - 1).to_time(:utc).end_of_day.to_date
+    Date.today
   end
 
   def batch_data_cached?
@@ -98,7 +98,7 @@ class ::BatchArchiving::RecordCollector
 
   def retrieve_first_batch
     @current_records = ActiveRecord::Base.connection.execute(
-      RECORD_QUERY % {
+      ::BatchArchiving::RECORD_QUERY % {
           limit: absolute_limit,
           table_name: table_name
         }
@@ -107,7 +107,7 @@ class ::BatchArchiving::RecordCollector
 
   def retrieve_next_batch
     @current_records = ActiveRecord::Base.connection.execute(
-      RECORD_QUERY % {
+      ::BatchArchiving::RECORD_QUERY % {
           limit: relative_limit,
           table_name: table_name
         }
