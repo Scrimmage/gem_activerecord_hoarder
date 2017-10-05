@@ -2,6 +2,7 @@ require "spec_helper"
 
 class Example < ActiveRecord::Base
   batch_archivable
+  acts_as_paranoid
 end
 
 RSpec.describe BatchArchiving do
@@ -40,7 +41,8 @@ RSpec.describe BatchArchiving do
     end
 
     before :each do
-      # archive
+      allow(::BatchArchiving::Storage).to receive(:store_archive).and_return(true)
+      Example.archive_batch
     end
 
     context "with records only in current week" do
@@ -127,12 +129,28 @@ RSpec.describe BatchArchiving do
   end
 
   describe "workflow" do
+    let(:collector) { ::BatchArchiving::RecordCollector.new(Example) }
+    let(:batch1) { double }
+
+    before do
+      allow(::BatchArchiving::RecordCollector).to receive(:new).and_return(collector)
+      allow(collector).to receive(:retrieve_batch).and_return(true, false)
+      allow(collector).to receive(:destroy_current_records!)
+    end
+
     it "fully processes one record batch before moving on to the next" do
-      expect(false).to be true # successive order or collector - serializer - storage
+      expect(collector).to receive(:retrieve_batch)
+      expect(::BatchArchiving::Serializer).to receive(:create_archive)
+      expect(::BatchArchiving::Storage).to receive(:store_archive).and_return(true)
+      expect(collector).to receive(:destroy_current_records!)
+      expect(collector).to receive(:retrieve_batch)
+      Example.archive_batch
     end
 
     it "does not delete a record that wasn't successfully archived" do
-      expect(false).to be true # let archive storage raise error and check record is not deleted
+      expect(::BatchArchiving::Storage).to receive(:store_archive).and_return(false)
+      expect(collector).not_to receive(:destroy_current_records!)
+      Example.archive_batch
     end
   end
 end
