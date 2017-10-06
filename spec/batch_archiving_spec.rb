@@ -157,13 +157,13 @@ RSpec.describe BatchArchiving do
     it "fully processes one record batch before moving on to the next" do
       expect(collector).to receive(:retrieve_batch)
       expect(::BatchArchiving::Serializer).to receive(:create_archive)
-      expect(::BatchArchiving::Storage).to receive(:store_archive).and_return(true)
+      expect_any_instance_of(::BatchArchiving::Storage).to receive(:store_archive).and_return(true)
       expect(collector).to receive(:destroy_current_records!)
       expect(collector).to receive(:retrieve_batch)
     end
 
     it "does not delete a record that wasn't successfully archived" do
-      expect(::BatchArchiving::Storage).to receive(:store_archive).and_return(false)
+      expect_any_instance_of(::BatchArchiving::Storage).to receive(:store_archive).and_return(false)
       expect(collector).not_to receive(:destroy_current_records!)
     end
   end
