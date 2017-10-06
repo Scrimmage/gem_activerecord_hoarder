@@ -90,6 +90,16 @@ RSpec.describe BatchArchiving do
         )
         @non_archivable_records = create_list(
           :examples_on_date,
+          2,
+          deleted: true,
+          records_date: (1.week.ago.getutc.beginning_of_week - 1.day).to_date
+        ) + create_list(
+          :examples_on_date,
+          1,
+          deleted: false,
+          records_date: (1.week.ago.getutc.beginning_of_week - 1.day).to_date
+        ) + create_list(
+          :examples_on_date,
           4,
           deleted: true,
           records_date: (1.week.ago.getutc.beginning_of_week + 3.days).to_date,
