@@ -20,6 +20,7 @@ module ::BatchArchiving::AwsS3
   def self.store_archive(archive_content:, storage_key:, access_control: nil)
     if access_control.nil?
       access_control = self.class.storage_options["acl"]
+    end
     s3_client.put_object(acl: access_control, body: archive_content, bucket: s3_bucket, key: storage_key)
   end
 
@@ -33,7 +34,9 @@ module ::BatchArchiving::AwsS3
   def retrieve_records_from_archive
   end
 
-  def store_archive
+  def store_archive(key_sequence:, content:, options: {})
+    storage_key = File.join(key_sequence)
+    self.class.store_archive(archive_content: content, storage_key: storage_key, access_control: options["acl"])
   end
 
   private
@@ -43,7 +46,7 @@ module ::BatchArchiving::AwsS3
   end
 
   def s3_client
-    @s3_client ||= do
+    @s3_client ||= begin
       access_key_id = self.class.storage_options["access_key_id"]
       secret_access_key = self.class.storage_options["secret_access_key"]
       credentials = Aws::Credentials.new(access_key_id, secret_access_key)
