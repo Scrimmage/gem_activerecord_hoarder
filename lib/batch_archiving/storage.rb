@@ -1,14 +1,3 @@
-module ::BatchArchiving::ConfigTemplate = "
-storage_config:
-  client_config:
-    region: <region>
-    credentials:
-      access_key_id: <access_key_id>
-      secret_access_key: <secret_access_key>
-  acl: <acl>
-  bucket: <bucket>
-  "
-
 class ::BatchArchiving::Storage
   def self.configure(storage:, storage_options:)
     @@storage_options = storage_options
