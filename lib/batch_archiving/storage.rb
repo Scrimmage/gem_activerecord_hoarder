@@ -7,31 +7,12 @@ class ::BatchArchiving::Storage
     end
 
     if storage == :aws_s3
-      extend ::BatchArchiving::AwsS3
+      include ::BatchArchiving::AwsS3
     elsif storage == :local
-      extend ::BatchArchiving::Local
+      include ::BatchArchiving::Local
     else
-      raise "unknown storage (#{storage})"
+      raise "unknown storage (#{storage}), known keys are [aws_s3, local]"
     end
-  end
-
-  def initialize(model)
-    puts "instantiating abstract storage"
-    @model = model
-  end
-
-  private
-
-  def self.store_archive
-  end
-
-  def self.retrieve_records_from_archive
-  end
-
-  def retrieve_records_from_archive
-  end
-
-  def store_archive
   end
 end
 
@@ -44,11 +25,16 @@ module ::BatchArchiving::AwsS3
   end
 
   def initialize(model)
-    @model = model
+    record_name = model.to_s.downcase.pluralize
+    if self.class.storage_options["bucket_sub_dir"].blank?
+      @key_prefix = record_name
+    else
+      @key_prefix = File.join(self.class.storage_options["bucket_sub_dir"], record_name)
+    end
   end
 
   def store_archive(key_sequence:, content:, options: {})
-    storage_key = File.join(key_sequence)
+    storage_key = File.join(@key_prefix, key_sequence)
     self.class.store_archive(archive_content: content, storage_key: storage_key, access_control: options["acl"])
   end
 
