@@ -14,6 +14,25 @@ class ::BatchArchiving::Storage
       raise "unknown storage (#{storage})"
     end
   end
+
+  def initialize(model)
+    puts "instantiating abstract storage"
+    @model = model
+  end
+
+  private
+
+  def self.store_archive
+  end
+
+  def self.retrieve_records_from_archive
+  end
+
+  def retrieve_records_from_archive
+  end
+
+  def store_archive
+  end
 end
 
 module ::BatchArchiving::AwsS3
@@ -24,14 +43,8 @@ module ::BatchArchiving::AwsS3
     s3_client.put_object(acl: access_control, body: archive_content, bucket: s3_bucket, key: storage_key)
   end
 
-  def self.retrieve_records_from_archive(prefix:, date_range: nil)
-  end
-
   def initialize(model)
     @model = model
-  end
-
-  def retrieve_records_from_archive
   end
 
   def store_archive(key_sequence:, content:, options: {})
@@ -57,18 +70,4 @@ module ::BatchArchiving::AwsS3
 end
 
 module ::BatchArchiving::Local
-  def self.store_archive
-  end
-
-  def self.retrieve_records_from_archive
-  end
-
-  def initialize(model)
-  end
-
-  def retrieve_records_from_archive
-  end
-
-  def store_archive
-  end
 end
