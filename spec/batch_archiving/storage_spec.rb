@@ -19,15 +19,5 @@ RSpec.describe ::BatchArchiving::Storage do
         expect(storage.class).to be(::BatchArchiving::AwsS3)
       end
     end
-
-    context "local" do
-      before do
-        ::BatchArchiving::Storage.configure(storage: :local, storage_options: {})
-      end
-
-      it "returns a local storage" do
-        expect(storage.class).to be(::BatchArchiving::Local)
-      end
-    end
   end
 end

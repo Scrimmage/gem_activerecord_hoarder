@@ -1,7 +1,4 @@
-::BatchArchiving::Storages = {
-  aws_s3: ::BatchArchiving::AwsS3,
-  local: ::BatchArchiving::Local
-}
+require 'batch_archiving/storages'
 
 class ::BatchArchiving::StorageError < StandardError
 end
@@ -25,7 +22,7 @@ class ::BatchArchiving::Storage
   private
 
   def self.check_storage(storage_id)
-    raise ::BatchArchiving::StorageError.new("unknown storage (#{storage}), known keys are [aws_s3, local]") if ! ::BatchArchiving::Storages.include?(storage_id)
+    raise ::BatchArchiving::StorageError.new("unknown storage (#{storage_id}), known keys are #{::BatchArchiving::Storages.keys}") if ! ::BatchArchiving::Storages.include?(storage_id)
   end
 
   def self.new(model, storage_override: nil, storage_options_override: {})

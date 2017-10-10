@@ -1,3 +1,5 @@
+require 'batch_archiving/batch_archiver'
+
 module BatchArchiving::Core
   def self.included(base)
     raise 'created_at accessor needed' if not base.new.respond_to?(:created_at)

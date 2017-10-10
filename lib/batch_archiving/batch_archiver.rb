@@ -1,3 +1,7 @@
+require 'batch_archiving/record_collector'
+require 'batch_archiving/storage'
+require 'batch_archiving/serializer'
+
 class ::BatchArchiving::BatchArchiver
   def initialize(model)
     @record_collector = ::BatchArchiving::RecordCollector.new(model)
