@@ -1,2 +1,8 @@
-storage_options = YAML.load_file("config/batch_archiving_rspec.yml")
-::BatchArchiving::Storage.configure(storage: :aws_s3, storage_options: storage_options)
+::BatchArchiving::StorageOptions = YAML.load_file("config/batch_archiving_rspec.yml")
+
+RSpec.configure do |config|
+  config.after(:each) do
+    BatchArchiving.send(:remove_const, 'Storage')
+    load 'lib/batch_archiving/storage.rb'
+  end
+end
