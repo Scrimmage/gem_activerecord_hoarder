@@ -1,4 +1,4 @@
-Dir.glob(File.join("lib","batch_archiving", "*.rb")).each do |file| require File.expand_path(file) end
+Dir.glob(File.join("lib","batch_archiving", "*.rb")).each do |file| require file.split("/").drop(1).join("/") end
 
 module BatchArchiving
   def batch_archivable(**options)
