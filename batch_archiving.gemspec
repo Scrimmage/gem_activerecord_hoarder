@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(spec|config|db|bin)/})
   end
-  spec.require_paths = ["lib/**"]
+  spec.require_path = "lib"
 
   spec.add_dependency "activerecord", [">= 4.2", "< 6.0"]
 
