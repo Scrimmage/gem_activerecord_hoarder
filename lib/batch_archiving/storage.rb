@@ -3,6 +3,9 @@
   local: ::BatchArchiving::Local
 }
 
+class ::BatchArchiving::StorageError < StandardError
+end
+
 class ::BatchArchiving::Storage
   def self.configure(storage:, storage_options:)
     check_storage(storage)
@@ -22,11 +25,11 @@ class ::BatchArchiving::Storage
   private
 
   def self.check_storage(storage_id)
-    raise "unknown storage (#{storage}), known keys are [aws_s3, local]" if ! ::BatchArchiving::Storages.include?(storage_id)
+    raise ::BatchArchiving::StorageError.new("unknown storage (#{storage}), known keys are [aws_s3, local]") if ! ::BatchArchiving::Storages.include?(storage_id)
   end
 
-  def self.new(model, storage_override: nil, storage_options_override)
-    raise "storage needs to be configured" unless try(:storage) and try(:storage_options)
+  def self.new(model, storage_override: nil, storage_options_override: {})
+    raise ::BatchArchiving::StorageError.new("storage needs to be configured") unless try(:storage) and try(:storage_options)
     check_storage(storage_override) unless storage_override.blank?
 
     storage_id = storage_override || storage

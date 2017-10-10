@@ -13,11 +13,12 @@ class ::BatchArchiving::AwsS3
     end
   end
 
-  def store_archive(key_sequence:, content:, options: {})
-    storage_key = File.join(@key_prefix, key_sequence)
-    put_options = storage_options.merge(options)
+  def store_archive(content:, file_type:, key_sequence:, options: {})
+    storage_key = File.join(@key_prefix, key_sequence) + '.' + file_type.to_s
+    acl = options["acl"] || storage_options["acl"] || "private"
+    bucket = options["bucket"] || storage_options["bucket"]
 
-    s3_client.put_object(body: content, key: storage_key, **put_options)
+    s3_client.put_object(bucket: bucket, body: content, key: storage_key, acl: acl)
   end
 
   private

@@ -56,9 +56,8 @@ class ::BatchArchiving::RecordCollector
   end
 
   def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if @current_records.blank?
-    batch_data = @current_records.to_a
-    success = yield [current_batch_key, batch_data]
+    raise "no records cached, run `retrieve_batch`" if cached_batch.blank?
+    success = yield cached_batch.to_a
     if delete_on_success
       if success.is_a? TrueClass
         destroy_current_records!
@@ -78,10 +77,8 @@ class ::BatchArchiving::RecordCollector
     @current_records.try(:any?)
   end
 
-  def current_batch_key
-    date_time = @current_records.first["created_at"]
-    date = date_time.split(' ').first
-    date.split('-')
+  def cached_batch
+    @current_records
   end
 
   def ensuring_new_records
