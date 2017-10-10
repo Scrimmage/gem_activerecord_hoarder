@@ -22,8 +22,8 @@ class ::BatchArchiving::BatchArchiver
 
   def compose_key(record_data)
     date = record_data["created_at"].to_date
-    year = date.year
-    month = date.month
+    year = date.year.to_s
+    month = date.month.to_s
     filename = date.iso8601
     [year, month, filename]
   end
