@@ -11,5 +11,19 @@ end
 ```
 and to use functionality:
 ```
+storage_id = :aws_s3 # currently no other storages implemented
+storage_options = {
+  access_key_id: <aws_access_key_id>,
+  acl: <acl>, # default 'private'
+  bucket: <aws bucket>,
+  region: <aws region>,
+  secret_access_key: <aws_secret_access_key>
+}
+::BatchArchiving::Storage.configure(storage: storage_id, storage_options: storage_options)
+
 ExampleModel.archive_batch
 ```
+
+Should result in records stored on AWS S3
+with keys: `year/month/year-month-day.json`
+and content: pretty formatted json model serializations
