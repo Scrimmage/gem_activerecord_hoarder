@@ -27,4 +27,4 @@ ExampleModel.archive_batch
 
 Should result in records stored on AWS S3
 with keys: `batch_archiving/<bucket_sub_dir>/<year>/<month>/<year>-<month>-<day>.json`
-and content: <pretty formatted json model serializations>
+and content: `<pretty formatted json model serializations>`
