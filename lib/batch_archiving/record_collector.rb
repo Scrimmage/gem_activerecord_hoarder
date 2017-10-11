@@ -85,6 +85,6 @@ class ::BatchArchiving::RecordCollector
   end
 
   def table_name
-    @model.to_s.downcase.pluralize
+    @model.to_s.underscore.pluralize
   end
 end

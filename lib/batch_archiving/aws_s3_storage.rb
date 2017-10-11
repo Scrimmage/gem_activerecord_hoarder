@@ -4,7 +4,7 @@ class ::BatchArchiving::AwsS3
   def initialize(model, storage_options)
     @storage_options = storage_options
 
-    record_name = model.to_s.downcase.pluralize
+    record_name = model.to_s.underscore.pluralize
 
     if storage_options["bucket_sub_dir"].blank?
       @key_prefix = record_name
