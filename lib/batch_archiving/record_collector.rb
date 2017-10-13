@@ -1,7 +1,4 @@
-require 'batch_archiving/record_query'
-
 class ::BatchArchiving::RecordCollector
-
   attr_reader :relative_limit
 
   def initialize(model)

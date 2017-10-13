@@ -1,5 +1,3 @@
-require 'batch_archiving/storages'
-
 class ::BatchArchiving::StorageError < StandardError
 end
 
