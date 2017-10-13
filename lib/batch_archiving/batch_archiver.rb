@@ -1,4 +1,6 @@
 class ::BatchArchiving::BatchArchiver
+  RECORD_DATE_FIELD = "created_at"
+
   def initialize(model_class)
     @record_collector = ::BatchArchiving::RecordCollector.new(model_class)
     @archive_storage = ::BatchArchiving::Storage.new(model_class)
@@ -17,7 +19,7 @@ class ::BatchArchiving::BatchArchiver
   private
 
   def compose_key(record_data)
-    date = record_data["created_at"].to_date
+    date = record_data[RECORD_DATE_FIELD].to_date
     year = date.year.to_s
     month = date.month.to_s
     filename = date.iso8601
