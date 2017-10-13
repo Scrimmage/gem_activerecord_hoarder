@@ -1,8 +1,8 @@
 class ::BatchArchiving::RecordCollector
   attr_reader :relative_limit
 
-  def initialize(model)
-    @model = model
+  def initialize(model_class)
+    @model = model_class
   end
 
   def retrieve_batch
@@ -81,6 +81,6 @@ class ::BatchArchiving::RecordCollector
   end
 
   def table_name
-    @model.to_s.underscore.pluralize
+    @model.table_name
   end
 end

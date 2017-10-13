@@ -1,7 +1,7 @@
 class ::BatchArchiving::BatchArchiver
-  def initialize(model)
-    @record_collector = ::BatchArchiving::RecordCollector.new(model)
-    @archive_storage = ::BatchArchiving::Storage.new(model)
+  def initialize(model_class)
+    @record_collector = ::BatchArchiving::RecordCollector.new(model_class)
+    @archive_storage = ::BatchArchiving::Storage.new(model_class)
   end
 
   def archive_batch
