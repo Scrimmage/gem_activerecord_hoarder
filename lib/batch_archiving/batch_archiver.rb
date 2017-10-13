@@ -9,7 +9,7 @@ class ::BatchArchiving::BatchArchiver
       @record_collector.with_batch(delete_on_success: true) do |batch_data|
         serialized_batch = ::BatchArchiving::Serializer.create_archive(batch_data)
         key_parts = compose_key(batch_data[0])
-        @archive_storage.store_archive(content: serialized_batch, file_type: :json, key_sequence:key_parts) and true
+        @archive_storage.store_archive(content: serialized_batch, file_type: :json, key_sequence:key_parts) && true
       end
     end
   end

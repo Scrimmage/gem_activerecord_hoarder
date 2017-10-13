@@ -24,7 +24,7 @@ class ::BatchArchiving::Storage
   end
 
   def self.new(model_class, storage_override: nil, storage_options_override: {})
-    raise ::BatchArchiving::StorageError.new("storage needs to be configured") unless try(:storage) and try(:storage_options)
+    raise ::BatchArchiving::StorageError.new("storage needs to be configured") unless try(:storage) && try(:storage_options)
     check_storage(storage_override) unless storage_override.blank?
 
     storage_id = storage_override || storage

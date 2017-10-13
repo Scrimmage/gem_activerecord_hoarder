@@ -23,7 +23,7 @@ class ::BatchArchiving::RecordCollector
     if delete_on_success
       if success.is_a? TrueClass
         destroy_current_records!
-      elsif not success.is_a? FalseClass
+      elsif ! success.is_a? FalseClass
         raise "when deleting on success, the block must return a success boolean"
       end
     end
