@@ -2,7 +2,7 @@ class ::BatchArchiving::RecordCollector
   attr_reader :relative_limit
 
   def initialize(model_class)
-    @model = model_class
+    @model_class = model_class
   end
 
   def retrieve_batch
@@ -58,17 +58,17 @@ class ::BatchArchiving::RecordCollector
 
   def destroy_current_records!
     @current_records.each do |record_data|
-      @model.unscoped.where(id: record_data["id"]).first.really_destroy!
+      @model_class.unscoped.where(id: record_data["id"]).first.really_destroy!
     end
   end
 
   def retrieve_first_batch
-    sql_query = ::BatchArchiving::BatchQuery.new(absolute_limit, @model).to_sql
-    ActiveRecord::Base.connection.execute(sql_query)
+    sql_query = ::BatchArchiving::BatchQuery.new(absolute_limit, @model_class).to_sql
+    @model_class.connection.execute(sql_query)
   end
 
   def retrieve_next_batch
-    sql_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model).to_sql
-    ActiveRecord::Base.connection.execute(sql_query)
+    sql_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class).to_sql
+    @model_class.connection.execute(sql_query)
   end
 end
