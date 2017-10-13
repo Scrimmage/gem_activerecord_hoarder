@@ -19,15 +19,5 @@ require "batch_archiving"
 storage_options = YAML.load_file("config/batch_archiving_rspec.yml")
 ::BatchArchiving::Storage.configure(storage: :aws_s3, storage_options: storage_options)
 
-class Example < ActiveRecord::Base
-  batch_archivable
-end
-
-def create_examples(count, start: 0, deleted: true)
-  (1..count).each do |n|
-    Example.create(content: "example: #{n}", created_at: (n+start).hours.ago, deleted_at: Time.now)
-  end
-end
-
 require "irb"
 IRB.start(__FILE__)
