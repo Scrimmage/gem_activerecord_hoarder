@@ -2,7 +2,6 @@ require "spec_helper"
 
 class Example < ActiveRecord::Base
   batch_archivable
-  acts_as_paranoid
 end
 
 RSpec.describe BatchArchiving do

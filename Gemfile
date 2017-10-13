@@ -3,7 +3,6 @@ source "https://rubygems.org"
 repo_name = "gem_batch_archiving"
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'paranoia'
 gem 'aws-sdk-s3', '~> 1'
 
 group :test do
