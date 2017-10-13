@@ -45,7 +45,7 @@ class ::BatchArchiving::RecordCollector
 
   def ensuring_new_records
     record_batch = yield
-    record_batch if @current_records.values == record_batch.values
+    @current_records.values == record_batch.values ? record_batch : []
   end
 
   def limit_toggled?
@@ -63,24 +63,12 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_first_batch
-    ActiveRecord::Base.connection.execute(
-      ::BatchArchiving::RECORD_QUERY % {
-          limit: absolute_limit,
-          table_name: table_name
-        }
-    )
+    sql_query = ::BatchArchiving::BatchQuery.new(absolute_limit, @model).to_sql
+    ActiveRecord::Base.connection.execute(sql_query)
   end
 
   def retrieve_next_batch
-    ActiveRecord::Base.connection.execute(
-      ::BatchArchiving::RECORD_QUERY % {
-          limit: relative_limit,
-          table_name: table_name
-        }
-    )
-  end
-
-  def table_name
-    @model.table_name
+    sql_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model).to_sql
+    ActiveRecord::Base.connection.execute(sql_query)
   end
 end
