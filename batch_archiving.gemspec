@@ -4,15 +4,15 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "batch_archiving/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "batch_archiving"
-  spec.version       = BatchArchiving::VERSION
-  spec.authors       = ["mchadwick MatthiasEngh"]
-  spec.email         = ["matthias@wescrimmage.com"]
+  spec.name = "batch_archiving"
+  spec.version = BatchArchiving::VERSION
+  spec.authors = ["mchadwick MatthiasEngh"]
+  spec.email = ["matthias@wescrimmage.com"]
 
-  spec.summary       = %q{archive records in batches}
-  spec.description   = %q{extend active records with simple archiving mechanics}
-  spec.homepage      = "https://github.com/Scrimmage/gem_batch_archiving"
-  spec.license       = "MIT"
+  spec.summary = %q{archive records in batches}
+  spec.description = %q{extend active records with simple archiving mechanics}
+  spec.homepage = "https://github.com/Scrimmage/gem_batch_archiving"
+  spec.license = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
       "public gem pushes."
   end
 
-  spec.files         = Dir["lib/**/*", "README.md"]
+  spec.files = Dir["lib/**/*", "README.md"]
 
   spec.require_path = "lib"
 
