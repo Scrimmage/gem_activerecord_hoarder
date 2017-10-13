@@ -11,11 +11,11 @@ class ::BatchArchiving::RecordCollector
   def retrieve_batch
     activate_limit if batch_data_cached? && ! limit_toggled?
     if limit_toggled?
-      ensuring_new_records do
+      @current_records = ensuring_new_records do
         retrieve_next_batch
       end
     else
-      retrieve_first_batch
+      @current_records = retrieve_first_batch
     end
     batch_data_cached?
   end
@@ -39,7 +39,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def batch_data_cached?
-    @current_records.try(:any?)
+    @current_records.try(:any?).present?
   end
 
   def cached_batch
@@ -47,9 +47,8 @@ class ::BatchArchiving::RecordCollector
   end
 
   def ensuring_new_records
-    old_records = @current_records
-    yield
-    raise "fault: same records collected twice" if @current_records.values == old_records.values
+    record_batch = yield
+    record_batch if @current_records.values == record_batch.values
   end
 
   def limit_toggled?
@@ -67,7 +66,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_first_batch
-    @current_records = ActiveRecord::Base.connection.execute(
+    ActiveRecord::Base.connection.execute(
       ::BatchArchiving::RECORD_QUERY % {
           limit: absolute_limit,
           table_name: table_name
@@ -76,7 +75,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_next_batch
-    @current_records = ActiveRecord::Base.connection.execute(
+    ActiveRecord::Base.connection.execute(
       ::BatchArchiving::RECORD_QUERY % {
           limit: relative_limit,
           table_name: table_name
