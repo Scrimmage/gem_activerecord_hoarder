@@ -31,7 +31,7 @@ class ::BatchArchiving::RecordCollector
 
   private
 
-  def absolute_limit
+  def archive_timeframe_upper_limit
     Time.now.getutc.to_date
   end
 
@@ -53,7 +53,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def activate_limit
-    @relative_limit = [@current_records.first["created_at"].to_time(:utc).end_of_week.to_date + 1, absolute_limit].min
+    @relative_limit = [@current_records.first["created_at"].to_time(:utc).end_of_week.to_date + 1, archive_timeframe_upper_limit].min
   end
 
   def destroy_current_records!
@@ -63,7 +63,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_first_batch
-    sql_query = ::BatchArchiving::BatchQuery.new(absolute_limit, @model_class).to_sql
+    sql_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class).to_sql
     @model_class.connection.execute(sql_query)
   end
 
