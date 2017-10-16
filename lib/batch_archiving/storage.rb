@@ -1,26 +1,26 @@
-class ::BatchArchiving::StorageError < StandardError
-end
-
 class ::BatchArchiving::Storage
-  def self.configure(storage:, storage_options:)
-    check_storage(storage)
-    class_attribute :storage, :storage_options
+  class_attribute :storage, :storage_options
 
-    @@storage_options = storage_options
-    @@storage = storage
+  def self.configure(storage:, storage_options:)
+    ::BatchArchiving::Storages.is_valid_storage?(storage)
+
+    self.storage_options = storage_options
+    self.storage = storage
   end
 
   private
 
-  def self.check_storage(storage_id)
-    raise ::BatchArchiving::StorageError.new("unknown storage (#{storage_id}), known keys are #{::BatchArchiving::Storages.keys}") if ! ::BatchArchiving::Storages.include?(storage_id)
+  def self.new(model_class, storage_override: nil, storage_options_override: {})
+    self.check_configured
+    storage_class = ::BatchArchiving::Storages.retrieve(storage_override || storage)
+    storage_class.new(model_class, storage_options.merge(storage_options_override))
   end
 
-  def self.new(model_class, storage_override: nil, storage_options_override: {})
-    raise ::BatchArchiving::StorageError.new("storage needs to be configured") unless try(:storage) && try(:storage_options)
-    check_storage(storage_override) unless storage_override.blank?
+  def self.check_configured
+    raise ::BatchArchiving::StorageError.new("storage needs to be configured") unless is_configured?
+  end
 
-    storage_id = storage_override || storage
-    ::BatchArchiving::Storages[storage_id].new(model_class, @@storage_options.merge(storage_options_override))
+  def self.is_configured?
+    storage.present? && storage_options.present?
   end
 end

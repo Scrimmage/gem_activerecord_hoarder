@@ -5,6 +5,7 @@ require 'batch_archiving/record_collector'
 require 'batch_archiving/record_query'
 require 'batch_archiving/serializer'
 require 'batch_archiving/storage'
+require 'batch_archiving/storage_error'
 require 'batch_archiving/storages'
 
 module BatchArchiving
