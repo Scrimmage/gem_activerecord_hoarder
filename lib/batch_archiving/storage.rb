@@ -4,17 +4,10 @@ end
 class ::BatchArchiving::Storage
   def self.configure(storage:, storage_options:)
     check_storage(storage)
+    class_attribute :storage, :storage_options
 
     @@storage_options = storage_options
     @@storage = storage
-
-    def self.storage_options
-      @@storage_options
-    end
-
-    def self.storage
-      @@storage
-    end
   end
 
   private
