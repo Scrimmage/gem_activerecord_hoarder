@@ -20,8 +20,7 @@ class ::BatchArchiving::RecordCollector
   def with_batch(delete_on_success: false)
     raise "no records cached, run `retrieve_batch`" if cached_batch.blank?
     success = yield cached_batch.to_a
-    return if ! delete_on_success
-    raise "when deleting on success, the block must return a success boolean" if ! success
+    return if ! delete_on_success || ! success
     destroy_current_records!
   end
 
@@ -53,7 +52,7 @@ class ::BatchArchiving::RecordCollector
 
   def ensuring_new_records
     record_batch = yield
-    @current_records.values == record_batch.values ? record_batch : []
+    @current_records.values == record_batch.values ? [] : record_batch
   end
 
   def limit_toggled?

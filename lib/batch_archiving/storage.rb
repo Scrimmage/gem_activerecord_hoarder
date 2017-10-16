@@ -21,6 +21,6 @@ class ::BatchArchiving::Storage
   end
 
   def self.is_configured?
-    storage.present? && storage_options.present?
+    storage.present? && storage_options.is_a?(Hash)
   end
 end

@@ -1,12 +1,18 @@
 require 'spec_helper'
 
 RSpec.describe ::BatchArchiving::Storage do
+  let(:stub_model) { double }
+
+  before do
+    allow(stub_model).to receive(:table_name)
+  end
+
   describe "new" do
-    let(:storage) { ::BatchArchiving::Storage.new(:Model) }
+    let(:storage) { ::BatchArchiving::Storage.new(stub_model) }
 
     context "not configured" do
       it "fails and complains about configuration" do
-        expect{ ::BatchArchiving::Storage.new(:Model) }.to raise_error(::BatchArchiving::StorageError)
+        expect{ ::BatchArchiving::Storage.new(stub_model) }.to raise_error(::BatchArchiving::StorageError)
       end
     end
 
