@@ -20,16 +20,16 @@ class ::BatchArchiving::RecordCollector
   def with_batch(delete_on_success: false)
     raise "no records cached, run `retrieve_batch`" if cached_batch.blank?
     success = yield cached_batch.to_a
-    if delete_on_success
-      if success.is_a? TrueClass
-        destroy_current_records!
-      elsif ! success.is_a? FalseClass
-        raise "when deleting on success, the block must return a success boolean"
-      end
-    end
+    return if ! delete_on_success
+    raise "when deleting on success, the block must return a success boolean" if ! success
+    destroy_current_records!
   end
 
   private
+
+  def activate_limit
+    @relative_limit = [current_date.end_of_week + 1, archive_timeframe_upper_limit].min
+  end
 
   def archive_timeframe_upper_limit
     Time.now.getutc.to_date
@@ -43,6 +43,14 @@ class ::BatchArchiving::RecordCollector
     @current_records
   end
 
+  def current_date
+    @current_records.first["created_at"].to_time(:utc).to_date
+  end
+
+  def destroy_current_records!
+    @model_class.connection.execute(@batch_query.delete(current_date))
+  end
+
   def ensuring_new_records
     record_batch = yield
     @current_records.values == record_batch.values ? record_batch : []
@@ -52,23 +60,13 @@ class ::BatchArchiving::RecordCollector
     @relative_limit.present?
   end
 
-  def activate_limit
-    @relative_limit = [@current_records.first["created_at"].to_time(:utc).end_of_week.to_date + 1, archive_timeframe_upper_limit].min
-  end
-
-  def destroy_current_records!
-    @current_records.each do |record_data|
-      @model_class.unscoped.where(id: record_data["id"]).first.really_destroy!
-    end
-  end
-
   def retrieve_first_batch
-    sql_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class).to_sql
-    @model_class.connection.execute(sql_query)
+    @batch_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class)
+    @model_class.connection.execute(@batch_query.fetch)
   end
 
   def retrieve_next_batch
-    sql_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class).to_sql
-    @model_class.connection.execute(sql_query)
+    @batch_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class)
+    @model_class.connection.execute(@batch_query.fetch)
   end
 end

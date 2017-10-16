@@ -36,16 +36,33 @@ module BatchArchiving
       );
     SQL
 
+    QUERY_TEMPLATE_FOR_DATE_DELETION = <<-SQL.strip_heredoc
+      DELETE FROM %{table_name} WHERE created_at::date = '%{date}';
+    SQL
+
     def initialize(limit, model_class)
       @limit = limit
       @model_class = model_class
     end
 
-    def to_sql
+    def delete(date)
+      QUERY_TEMPLATE_FOR_DATE_DELETION % {
+        date: date,
+        table_name: table_name
+      }
+    end
+
+    def fetch
       QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT % {
         limit: @limit,
-        table_name: @model_class.table_name
+        table_name: table_name
       }
+    end
+
+    private
+
+    def table_name
+      @model_class.table_name
     end
   end
 end
