@@ -32,7 +32,7 @@ class ::BatchArchiving::RecordCollector
   private
 
   def absolute_limit
-    Date.today
+    Time.now.getutc.to_date
   end
 
   def batch_data_cached?
