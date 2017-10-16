@@ -27,6 +27,7 @@ class ::BatchArchiving::AwsS3
     bucket = options[OPTION_BUCKET] || s3_bucket
 
     s3_client.put_object(bucket: bucket, body: content, key: storage_key, acl: acl)
+    true
   end
 
   private
