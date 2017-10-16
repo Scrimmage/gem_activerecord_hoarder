@@ -9,7 +9,7 @@ require 'batch_archiving/storage_error'
 require 'batch_archiving/storages'
 
 module BatchArchiving
-  def batch_archivable(**options)
+  def batch_archivable
     include BatchArchiving::Core
   end
 end
