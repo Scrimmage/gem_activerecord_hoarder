@@ -1,43 +1,58 @@
 module BatchArchiving
   class BatchQuery
-    QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT = <<-SQL.strip_heredoc
-      SELECT *
-      FROM %{table_name}
-      WHERE
-        created_at::date = (
+    SUBQUERY_DELETED_RECORDS = <<~SQL.strip_heredoc
       SELECT
-        min(creation_date)
+        %{fields}
       FROM
-        (
-        SELECT
-          creation_date
-        FROM
-          (
-            SELECT
-              created_at::date AS creation_date,
-              CASE WHEN deleted_at IS NULL
-                THEN 0
-                ELSE 1
-              END AS is_deleted,
-              count(*)
-            FROM %{table_name}
-              GROUP BY
-                creation_date,
-                is_deleted
-          ) AS state_counts
-        GROUP BY
-          creation_date
-        HAVING
-          count(*) = 1
-          AND max(is_deleted) = 1
-        ) AS creation_dates
+        %{table_name}
       WHERE
-        creation_date < '%{limit}'
-      );
+        deleted_at IS NOT NULL
     SQL
 
-    QUERY_TEMPLATE_FOR_DATE_DELETION = <<-SQL.strip_heredoc
-      DELETE FROM %{table_name} WHERE created_at::date = '%{date}';
+    SUBQUERY_NON_DELETED_RECORDS = <<~SQL.strip_heredoc
+      SELECT
+        %{fields}
+      FROM
+        %{table_name}
+      WHERE
+        deleted_at IS NULL
+    SQL
+
+    QUERY_TEMPLATE_FOR_DATE_DELETION = <<~SQL.strip_heredoc
+      DELETE FROM %{table_name} WHERE date(created_at) = '%{date}';
+    SQL
+
+    QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT = <<~SQL.strip_heredoc
+      SELECT
+        *
+      FROM
+        %{table_name}
+      WHERE
+        date(created_at) = (
+          SELECT
+            min(dates_with_deleted.creation_date)
+          FROM
+            (
+              #{SUBQUERY_DELETED_RECORDS % {
+                  fields: "date(created_at) as creation_date",
+                  table_name: "%{table_name}"
+              }}
+            ) as dates_with_deleted
+            LEFT OUTER JOIN
+            (
+              #{SUBQUERY_NON_DELETED_RECORDS % {
+                fields: "date(created_at) as creation_date",
+                table_name: "%{table_name}"
+              }}
+            ) as dates_with_non_deleted
+            ON
+              dates_with_deleted.creation_date = dates_with_non_deleted.creation_date
+            WHERE
+              dates_with_non_deleted.creation_date IS NULL
+            AND
+              created_at < '%{limit}'
+        )
+      ;
     SQL
 
     def initialize(limit, model_class)

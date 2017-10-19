@@ -31,7 +31,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def archive_timeframe_upper_limit
-    Time.now.getutc.to_date
+    Time.now.getutc.beginning_of_day
   end
 
   def batch_data_cached?
@@ -52,7 +52,7 @@ class ::BatchArchiving::RecordCollector
 
   def ensuring_new_records
     record_batch = yield
-    @current_records.values == record_batch.values ? [] : record_batch
+    @current_records == record_batch ? [] : record_batch
   end
 
   def limit_toggled?
