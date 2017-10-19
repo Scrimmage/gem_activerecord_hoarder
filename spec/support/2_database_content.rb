@@ -6,3 +6,9 @@ ActiveRecord::Schema.define do
     t.string "content"
   end
 end
+
+RSpec.configure do |config|
+  config.after(:each) do
+    ActiveRecord::Base.connection.execute("DELETE FROM examples;")
+  end
+end
