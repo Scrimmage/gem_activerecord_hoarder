@@ -19,15 +19,25 @@ class ::BatchArchiving::AwsS3
     end
   end
 
+  def fetch_data(key)
+    full_key = key_with_prefix(key)
+    s3_client.get_object(bucket: s3_bucket, key: full_key)
+  end
+
   def store_archive(batch)
     acl = options[OPTION_CONTENT_ACCESS] || s3_acl || DEFAULT_ACL
     bucket = options[OPTION_BUCKET] || s3_bucket
+    full_key = key_with_prefix(batch.key.to_s)
 
-    s3_client.put_object(bucket: bucket, body: batch.to_s, key: batch.key.to_s, acl: acl)
+    s3_client.put_object(bucket: bucket, body: batch.to_s, key: full_key, acl: acl)
     true
   end
 
   private
+
+  def key_with_prefix(key)
+    File.join(@key_prefix, key)
+  end
 
   def s3_acl
     @s3_acl ||= storage_options[OPTION_CONTENT_ACCESS]
