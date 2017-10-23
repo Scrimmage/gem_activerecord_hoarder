@@ -18,7 +18,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if cached_batch.blank?
+    raise "no records cached, run `retrieve_batch`" if cached_batch.empty?
     success = yield cached_batch.to_a
     return if ! delete_on_success || ! success
     destroy_current_records!
