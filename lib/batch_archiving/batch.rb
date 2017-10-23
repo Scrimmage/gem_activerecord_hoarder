@@ -1,7 +1,6 @@
 module ::BatchArchiving
   class Batch
     RECORD_DATE_FIELD = "created_at"
-    REPRESENTATIVE_INDEX = 0
 
     def self.from_records(record_data)
       record_data.present? ? new(record_data) : nil
@@ -13,7 +12,7 @@ module ::BatchArchiving
     end
 
     def date
-      @date ||= @record_data[REPRESENTATIVE_INDEX][RECORD_DATE_FIELD].to_date
+      @date ||= @record_data.first[RECORD_DATE_FIELD].to_date
     end
 
     def key
