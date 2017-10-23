@@ -1,21 +1,27 @@
-module ::BatchArchiving::Batch
-  RECORD_DATE_FIELD = "created_at"
-  REPRESENTATIVE_INDEX = 0
+module ::BatchArchiving
+  class Batch
+    RECORD_DATE_FIELD = "created_at"
+    REPRESENTATIVE_INDEX = 0
 
-  def initialize(data)
-    @data = data
-    @serializer = ::BatchArchiving::Serializer
-  end
+    def self.from_records(record_data)
+      record_data.present? ? new(record_data) : nil
+    end
 
-  def date
-    @date ||= @data[REPRESENTATIVE_INDEX][RECORD_DATE_FIELD].to_date
-  end
+    def initialize(record_data)
+      @record_data = record_data
+      @serializer = ::BatchArchiving::Serializer
+    end
 
-  def key
-    @key ||= ::BatchArchiving::StorageKey.from_date(date, @serializer.extension)
-  end
+    def date
+      @date ||= @record_data[REPRESENTATIVE_INDEX][RECORD_DATE_FIELD].to_date
+    end
 
-  def to_s
-    @serializer.create_archive(@data)
+    def key
+      @key ||= ::BatchArchiving::StorageKey.from_date(date, @serializer.extension)
+    end
+
+    def to_s
+      @serializer.create_archive(@record_data)
+    end
   end
 end

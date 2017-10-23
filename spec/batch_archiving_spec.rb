@@ -140,7 +140,7 @@ RSpec.describe BatchArchiving do
   end
 
   describe "workflow" do
-    let(:batch1) { [double, double] }
+    let(:batch1) { double }
     let(:collector) { ::BatchArchiving::RecordCollector.new(Example) }
     let(:storage) { double }
 
@@ -148,7 +148,7 @@ RSpec.describe BatchArchiving do
       allow(::BatchArchiving::Storage).to receive(:new).and_return(storage)
       allow(::BatchArchiving::RecordCollector).to receive(:new).and_return(collector)
       allow(collector).to receive(:retrieve_batch).and_return(true, false)
-      allow(collector).to receive(:cached_batch).and_return(batch1)
+      allow(collector).to receive(:batch_data_cached?).and_return(true)
       allow_any_instance_of(::BatchArchiving::BatchArchiver).to receive(:compose_key).and_return("key")
       allow(collector).to receive(:destroy_current_records!)
     end
@@ -159,7 +159,6 @@ RSpec.describe BatchArchiving do
 
     it "fully processes one record batch before moving on to the next" do
       expect(collector).to receive(:retrieve_batch)
-      expect(::BatchArchiving::Serializer).to receive(:create_archive)
       expect(storage).to receive(:store_archive).and_return(true)
       expect(collector).to receive(:destroy_current_records!)
       expect(collector).to receive(:retrieve_batch)

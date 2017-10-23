@@ -18,7 +18,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if @batch == nil
+    raise "no records cached, run `retrieve_batch`" if ! batch_data_cached?
     success = yield @batch
     return if ! delete_on_success || ! success
     destroy_current_records!
@@ -44,7 +44,7 @@ class ::BatchArchiving::RecordCollector
 
   def ensuring_new_records
     record_batch = yield
-    @batch.date == record_batch.date ? [] : record_batch
+    @batch.date == record_batch.try(:date) ? nil : record_batch
   end
 
   def limit_toggled?
@@ -54,12 +54,12 @@ class ::BatchArchiving::RecordCollector
   def retrieve_first_batch
     @batch_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class)
     batch_data = @model_class.connection.execute(@batch_query.fetch)
-    ::BatchArchiving::Batch.new(batch_data)
+    ::BatchArchiving::Batch.from_records(batch_data)
   end
 
   def retrieve_next_batch
     @batch_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class)
     batch_data = @model_class.connection.execute(@batch_query.fetch)
-    ::BatchArchiving::Batch.new(batch_data)
+    ::BatchArchiving::Batch.from_records(batch_data)
   end
 end
