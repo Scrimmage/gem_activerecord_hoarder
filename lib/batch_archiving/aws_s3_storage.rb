@@ -9,24 +9,21 @@ class ::BatchArchiving::AwsS3
 
   attr_reader :storage_options
 
-  def initialize(model_class, storage_options)
+  def initialize(table_name, storage_options)
     @storage_options = storage_options
 
-    record_name = model_class.table_name
-
     if storage_options[OPTION_SUB_DIR].blank?
-      @key_prefix = record_name
+      @key_prefix = table_name
     else
-      @key_prefix = File.join(storage_options[OPTION_SUB_DIR], record_name)
+      @key_prefix = File.join(storage_options[OPTION_SUB_DIR], table_name)
     end
   end
 
-  def store_archive(content:, file_type:, key_sequence:, options: {})
-    storage_key = File.join(@key_prefix, key_sequence) + '.' + file_type.to_s
+  def store_archive(batch)
     acl = options[OPTION_CONTENT_ACCESS] || s3_acl || DEFAULT_ACL
     bucket = options[OPTION_BUCKET] || s3_bucket
 
-    s3_client.put_object(bucket: bucket, body: content, key: storage_key, acl: acl)
+    s3_client.put_object(bucket: bucket, body: batch.to_s, key: batch.key.to_s, acl: acl)
     true
   end
 

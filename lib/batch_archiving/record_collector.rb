@@ -8,18 +8,18 @@ class ::BatchArchiving::RecordCollector
   def retrieve_batch
     activate_limit if batch_data_cached? && ! limit_toggled?
     if limit_toggled?
-      @current_records = ensuring_new_records do
+      @batch = ensuring_new_records do
         retrieve_next_batch
       end
     else
-      @current_records = retrieve_first_batch
+      @batch = retrieve_first_batch
     end
     batch_data_cached?
   end
 
   def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if cached_batch.empty?
-    success = yield cached_batch.to_a
+    raise "no records cached, run `retrieve_batch`" if @batch == nil
+    success = yield @batch
     return if ! delete_on_success || ! success
     destroy_current_records!
   end
@@ -27,7 +27,7 @@ class ::BatchArchiving::RecordCollector
   private
 
   def activate_limit
-    @relative_limit = [current_date.end_of_week + 1, archive_timeframe_upper_limit].min
+    @relative_limit = [@batch.date.end_of_week + 1, archive_timeframe_upper_limit].min
   end
 
   def archive_timeframe_upper_limit
@@ -35,24 +35,16 @@ class ::BatchArchiving::RecordCollector
   end
 
   def batch_data_cached?
-    @current_records.try(:any?).present?
-  end
-
-  def cached_batch
-    @current_records
-  end
-
-  def current_date
-    @current_records.first["created_at"].to_time(:utc).to_date
+    @batch.present?
   end
 
   def destroy_current_records!
-    @model_class.connection.execute(@batch_query.delete(current_date))
+    @model_class.connection.execute(@batch_query.delete(@batch.date))
   end
 
   def ensuring_new_records
     record_batch = yield
-    @current_records == record_batch ? [] : record_batch
+    @batch.date == record_batch.date ? [] : record_batch
   end
 
   def limit_toggled?
@@ -61,11 +53,13 @@ class ::BatchArchiving::RecordCollector
 
   def retrieve_first_batch
     @batch_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class)
-    @model_class.connection.execute(@batch_query.fetch)
+    batch_data = @model_class.connection.execute(@batch_query.fetch)
+    ::BatchArchiving::Batch.new(batch_data)
   end
 
   def retrieve_next_batch
     @batch_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class)
-    @model_class.connection.execute(@batch_query.fetch)
+    batch_data = @model_class.connection.execute(@batch_query.fetch)
+    ::BatchArchiving::Batch.new(batch_data)
   end
 end
