@@ -1,2 +1,2 @@
 adapter: sqlite3
-database: 
+database: batch_archiving_rspec

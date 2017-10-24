@@ -1,2 +1,2 @@
 adapter: postgresql
-database: 
+database: batch_archiving
