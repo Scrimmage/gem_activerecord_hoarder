@@ -16,16 +16,13 @@ from console:
 ```
 ExampleModel.archive_batch
 ```
+will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models>/<year>/<month>/<year>-<month>-<day>.json` and content: `<pretty formatted json model serializations>`
 
 ### 1.3 restoring records
 from console:
 ```
 ExampleModel.restore_date(Date.new(<Y>,<m>,<d>))
 ```
-
-Should result in records stored on AWS S3
-with keys: `<bucket_sub_dir>/<table_name>/<year>/<month>/<year>-<month>-<day>.json`
-and content: `<pretty formatted json model serializations>`
 
 ## 2 Development
 
