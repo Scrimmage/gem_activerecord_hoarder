@@ -16,7 +16,7 @@ from console:
 ```
 ExampleModel.archive_batch
 ```
-will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models>/<year>/<month>/<year>-<month>-<day>.json` and content: `<pretty formatted json model serializations>`
+will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models>/<year>/<month>/<year>-<month>-<day>.json` and json formatted content
 
 ### 1.3 restoring records
 from console:
