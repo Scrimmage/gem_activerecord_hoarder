@@ -14,7 +14,7 @@ RSpec.describe ::BatchArchiving::AwsS3 do
     before do
       allow(storage).to receive(:s3_client).and_return(Aws::S3::Client.new(stub_responses: true))
       allow_any_instance_of(Aws::S3::Client).to receive(:get_object) do |object, args|
-        DATA_TEMPLATE % { key: args[:key] }
+        double(body: DATA_TEMPLATE % { key: args[:key] })
       end
     end
 

@@ -5,8 +5,8 @@ class ::BatchArchiving::RecordCollector
     @model_class = model_class
   end
 
-  def retrieve_batch
-    activate_limit if batch_data_cached? && ! limit_toggled?
+  def collect_batch
+    activate_limit if batch_data_cached? && !limit_toggled?
     if limit_toggled?
       @batch = ensuring_new_records do
         retrieve_next_batch
@@ -18,9 +18,9 @@ class ::BatchArchiving::RecordCollector
   end
 
   def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if ! batch_data_cached?
+    raise "no records cached, run `retrieve_batch`" if !batch_data_cached?
     success = yield @batch
-    return if ! delete_on_success || ! success
+    return if !delete_on_success || !success
     destroy_current_records!
   end
 

@@ -1,9 +1,5 @@
 require "spec_helper"
 
-class Example < ActiveRecord::Base
-  batch_archivable
-end
-
 RSpec.describe BatchArchiving do
 
   around(:all) do |example|
@@ -26,7 +22,7 @@ RSpec.describe BatchArchiving do
   describe "batch_archivable" do
     context "successfully included in ActiveRecord model" do
       it "extends with public class method .archive_batch" do
-        expect(Example.methods).to include(:archive_batch)
+        expect(ExampleArchivable.methods).to include(:archive_batch)
       end
     end
   end
@@ -61,15 +57,15 @@ RSpec.describe BatchArchiving do
           deleted: true,
           records_date: Date.today
         )
-        Example.archive_batch
+        ExampleArchivable.archive_batch
       end
 
       it "ignores current day" do
-        expect(Example.unscoped.to_a).to include(*@non_archivable_records)
+        expect(ExampleArchivable.unscoped.to_a).to include(*@non_archivable_records)
       end
 
       it "archives previous days" do
-        expect(Example.unscoped.to_a).not_to include(*@archivable_records)
+        expect(ExampleArchivable.unscoped.to_a).not_to include(*@archivable_records)
       end
     end
 
@@ -122,46 +118,46 @@ RSpec.describe BatchArchiving do
           end_time: Time.now,
           start_time: Time.now.getutc.beginning_of_week
         )
-        Example.archive_batch
+        ExampleArchivable.archive_batch
       end
 
       it "skips records from days with active records" do
-        expect(Example.unscoped.to_a).to include(*@non_archivable_records)
+        expect(ExampleArchivable.unscoped.to_a).to include(*@non_archivable_records)
       end
 
       it "archives one week of fully deleted records" do
-        expect(Example.unscoped.to_a).not_to include(*@archivable_records)
+        expect(ExampleArchivable.unscoped.to_a).not_to include(*@archivable_records)
       end
 
       it "stops after one week" do
-        expect(Example.unscoped.to_a).to include(*@out_of_range_records)
+        expect(ExampleArchivable.unscoped.to_a).to include(*@out_of_range_records)
       end
     end
   end
 
   describe "workflow" do
     let(:batch1) { double }
-    let(:collector) { ::BatchArchiving::RecordCollector.new(Example) }
+    let(:collector) { ::BatchArchiving::RecordCollector.new(ExampleArchivable) }
     let(:storage) { double }
 
     before do
       allow(::BatchArchiving::Storage).to receive(:new).and_return(storage)
       allow(::BatchArchiving::RecordCollector).to receive(:new).and_return(collector)
-      allow(collector).to receive(:retrieve_batch).and_return(true, false)
+      allow(collector).to receive(:collect_batch).and_return(true, false)
       allow(collector).to receive(:batch_data_cached?).and_return(true)
       allow_any_instance_of(::BatchArchiving::BatchArchiver).to receive(:compose_key).and_return("key")
       allow(collector).to receive(:destroy_current_records!)
     end
 
     after do
-      Example.archive_batch
+      ExampleArchivable.archive_batch
     end
 
     it "fully processes one record batch before moving on to the next" do
-      expect(collector).to receive(:retrieve_batch)
+      expect(collector).to receive(:collect_batch)
       expect(storage).to receive(:store_archive).and_return(true)
       expect(collector).to receive(:destroy_current_records!)
-      expect(collector).to receive(:retrieve_batch)
+      expect(collector).to receive(:collect_batch)
     end
 
     it "does not delete a record that wasn't successfully archived" do

@@ -5,7 +5,7 @@ def datetimes_in_range(n, step: 5, start:, stop:)
 end
 
 FactoryGirl.define do
-  factory :example do
+  factory :example_archivable do
     transient do
       deleted false
     end
@@ -17,7 +17,7 @@ FactoryGirl.define do
     end
   end
 
-  factory :examples_in_range, parent: :example do
+  factory :examples_in_range, parent: :example_archivable do
     transient do
       end_time Time.now
       start_time 2.weeks.ago
@@ -27,7 +27,7 @@ FactoryGirl.define do
     sequence(:created_at, 0) { |n| datetimes_in_range(n, step: step, start: start_time, stop: end_time) }
   end
 
-  factory :examples_on_date, parent: :example do
+  factory :examples_on_date, parent: :example_archivable do
     transient do
       records_date Date.today - 1
       step 5

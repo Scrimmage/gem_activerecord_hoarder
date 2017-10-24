@@ -30,11 +30,9 @@ class ::BatchArchiving::AwsS3
   end
 
   def store_archive(batch)
-    acl = storage_options[OPTION_CONTENT_ACCESS] || s3_acl || DEFAULT_ACL
-    bucket = storage_options[OPTION_BUCKET] || s3_bucket
     full_key = key_with_prefix(batch.key.to_s)
 
-    s3_client.put_object(bucket: bucket, body: batch.to_s, key: full_key, acl: acl)
+    s3_client.put_object(bucket: s3_bucket, body: batch.to_s, key: full_key, acl: s3_acl)
     true
   end
 
@@ -45,11 +43,11 @@ class ::BatchArchiving::AwsS3
   end
 
   def s3_acl
-    @s3_acl ||= storage_options[OPTION_CONTENT_ACCESS]
+    storage_options[OPTION_CONTENT_ACCESS] || DEFAULT_ACL
   end
 
   def s3_bucket
-    @s3_bucket ||= storage_options[OPTION_BUCKET]
+    storage_options[OPTION_BUCKET]
   end
 
   def s3_client

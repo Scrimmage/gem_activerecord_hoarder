@@ -21,7 +21,7 @@ end
 require "batch_archiving"
 
 storage_config_path = "config/batch_archiving.yml"
-raise "storage configuration file #{storage_config_path}` not found" if ! File.exists?(storage_config_path)
+raise "storage configuration file #{storage_config_path}` not found" if !File.exists?(storage_config_path)
 storage_options = YAML.load_file(storage_config_path)
 ::BatchArchiving::Storage.configure(storage: :aws_s3, storage_options: storage_options)
 
