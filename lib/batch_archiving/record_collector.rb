@@ -6,7 +6,7 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_batch
-    activate_limit if batch_data_cached? && ! limit_toggled?
+    activate_limit if batch_data_cached? && !limit_toggled?
     if limit_toggled?
       @current_records = ensuring_new_records do
         retrieve_next_batch
@@ -20,7 +20,7 @@ class ::BatchArchiving::RecordCollector
   def with_batch(delete_on_success: false)
     raise "no records cached, run `retrieve_batch`" if cached_batch.empty?
     success = yield cached_batch.to_a
-    return if ! delete_on_success || ! success
+    return if ! delete_on_success || !success
     destroy_current_records!
   end
 

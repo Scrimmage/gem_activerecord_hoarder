@@ -23,21 +23,19 @@ class ::BatchArchiving::AwsS3
 
   def store_archive(content:, file_type:, key_sequence:, options: {})
     storage_key = File.join(@key_prefix, key_sequence) + '.' + file_type.to_s
-    acl = options[OPTION_CONTENT_ACCESS] || s3_acl || DEFAULT_ACL
-    bucket = options[OPTION_BUCKET] || s3_bucket
 
-    s3_client.put_object(bucket: bucket, body: content, key: storage_key, acl: acl)
+    s3_client.put_object(bucket: s3_bucket, body: content, key: storage_key, acl: s3_acl)
     true
   end
 
   private
 
   def s3_acl
-    @s3_acl ||= storage_options[OPTION_CONTENT_ACCESS]
+    storage_options[OPTION_CONTENT_ACCESS] || DEFAULT_ACL
   end
 
   def s3_bucket
-    @s3_bucket ||= storage_options[OPTION_BUCKET]
+    storage_options[OPTION_BUCKET]
   end
 
   def s3_client
