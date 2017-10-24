@@ -3,9 +3,17 @@ source "https://rubygems.org"
 repo_name = "gem_batch_archiving"
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-group :development do
-  gem 'activerecord-nulldb-adapter'
+gem 'aws-sdk-s3', '~> 1'
+gem 'arel'
+
+group :test do
+  gem 'factory_girl_rails'
+  gem 'sqlite3'
+  gem 'timecop'
 end
 
-# Specify your gem's dependencies in batch_archiving.gemspec
+group :development do
+  gem 'sqlite3'
+end
+
 gemspec

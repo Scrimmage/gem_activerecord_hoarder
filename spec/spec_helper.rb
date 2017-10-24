@@ -1,9 +1,15 @@
 require "bundler/setup"
 require "active_record"
+require "aws-sdk-s3"
+
 require "batch_archiving"
 
-# configure rspec
-require 'spec_helper/rspec_configuration'
+require "factory_girl_rails"
+require "pp"
+require "timecop"
 
-# configure active_record
-require 'spec_helper/active_record_configuration'
+Dir.glob("spec/support/*.rb").each do |file| require File.expand_path(file) end
+
+class ExampleArchivable < ActiveRecord::Base
+  batch_archivable
+end
