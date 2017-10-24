@@ -7,7 +7,7 @@ class ::BatchArchiving::BatchArchiver
   end
 
   def archive_batch
-    while @record_collector.retrieve_batch
+    while @record_collector.collect_batch
       @record_collector.with_batch(delete_on_success: true) do |batch_data|
         serialized_batch = ::BatchArchiving::Serializer.create_archive(batch_data)
         key_parts = compose_key(batch_data[0])

@@ -5,7 +5,7 @@ class ::BatchArchiving::RecordCollector
     @model_class = model_class
   end
 
-  def retrieve_batch
+  def collect_batch
     activate_limit if batch_data_cached? && !limit_toggled?
     if limit_toggled?
       @current_records = ensuring_new_records do
