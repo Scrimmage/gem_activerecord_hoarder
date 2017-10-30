@@ -24,7 +24,7 @@ module BatchArchiving
 
     QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT = <<~SQL.strip_heredoc
       SELECT
-        *
+        %{fields}
       FROM
         %{table_name}
       WHERE
@@ -62,6 +62,7 @@ module BatchArchiving
 
     def delete(date)
       QUERY_TEMPLATE_FOR_DATE_DELETION % {
+        fields: @model_class.column_names.join(", "),
         date: date,
         table_name: table_name
       }
@@ -69,6 +70,7 @@ module BatchArchiving
 
     def fetch
       QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT % {
+        fields: @model_class.column_names.join(", "),
         limit: @limit,
         table_name: table_name
       }

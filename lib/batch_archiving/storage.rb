@@ -6,14 +6,15 @@ class ::BatchArchiving::Storage
 
     self.storage_options = storage_options
     self.storage = storage
+    self
   end
 
   private
 
-  def self.new(model_class, storage_override: nil, storage_options_override: {})
+  def self.new(table_name, storage_override: nil, storage_options_override: {})
     self.check_configured
     storage_class = ::BatchArchiving::Storages.retrieve(storage_override || storage)
-    storage_class.new(model_class, storage_options.merge(storage_options_override))
+    storage_class.new(table_name, storage_options.merge(storage_options_override))
   end
 
   def self.check_configured
