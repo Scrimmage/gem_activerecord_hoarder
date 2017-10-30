@@ -10,26 +10,38 @@ module BatchArchiving
 
     attr_reader :storage_options
 
-    def initialize(model_class, storage_options)
+    def initialize(table_name, storage_options)
       @storage_options = storage_options
 
-      record_name = model_class.table_name
-
       if storage_options[OPTION_SUB_DIR].blank?
-        @key_prefix = record_name
+        @key_prefix = table_name
       else
-        @key_prefix = File.join(storage_options[OPTION_SUB_DIR], record_name)
+        @key_prefix = File.join(storage_options[OPTION_SUB_DIR], table_name)
       end
     end
 
-    def store_archive(content:, file_type:, key_sequence:, options: {})
-      storage_key = File.join(@key_prefix, key_sequence) + '.' + file_type.to_s
+    def fetch_data(key)
+      full_key = key_with_prefix(key)
+      begin
+        response = s3_client.get_object(bucket: s3_bucket, key: full_key)
+      rescue Aws::S3::Errors::NoSuchKey => e
+        raise ::BatchArchiving::StorageError.new("fetch_data erred with '#{e.class}':'#{e.message}'' trying to access '#{full_key}'' in bucket: '#{s3_bucket}'")
+      end
+      response.body
+    end
 
-      s3_client.put_object(bucket: s3_bucket, body: content, key: storage_key, acl: s3_acl)
+    def store_data(batch)
+      full_key = key_with_prefix(batch.key.to_s)
+
+      s3_client.put_object(bucket: s3_bucket, body: batch.content_string, key: full_key, acl: s3_acl)
       true
     end
 
     private
+
+    def key_with_prefix(key)
+      File.join(@key_prefix, key.to_s)
+    end
 
     def s3_acl
       storage_options[OPTION_CONTENT_ACCESS] || DEFAULT_ACL
