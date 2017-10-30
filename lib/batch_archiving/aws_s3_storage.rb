@@ -30,17 +30,17 @@ module BatchArchiving
       response.body
     end
 
-    def store_archive(batch)
+    def store_data(batch)
       full_key = key_with_prefix(batch.key.to_s)
 
-      s3_client.put_object(bucket: s3_bucket, body: batch.to_s, key: full_key, acl: s3_acl)
+      s3_client.put_object(bucket: s3_bucket, body: batch.content_string, key: full_key, acl: s3_acl)
       true
     end
 
     private
 
     def key_with_prefix(key)
-      File.join(@key_prefix, key.to_s)
+      File.join(@key_prefix, key.content_string)
     end
 
     def s3_acl

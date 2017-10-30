@@ -1,11 +1,7 @@
 class ::BatchArchiving::BatchArchiver
   def initialize(model_class, storage = nil)
     @record_collector = ::BatchArchiving::RecordCollector.new(model_class)
-    if storage == nil
-      @archive_storage = ::BatchArchiving::Storage.new(model_class.table_name)
-    else
-      @archive_storage = storage
-    end
+    @archive_storage = storage || default_storage_for_records(model_class.table_name)
   end
 
   def archive_batch
@@ -14,5 +10,9 @@ class ::BatchArchiving::BatchArchiver
         @archive_storage.store_archive(batch)
       end
     end
+  end
+
+  def default_storage_for_records(table_name)
+    ::BatchArchiving::Storage.new(table_name)
   end
 end

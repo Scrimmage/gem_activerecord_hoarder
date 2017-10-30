@@ -19,7 +19,7 @@ module ::BatchArchiving
       @key ||= ::BatchArchiving::StorageKey.from_date(date, @serializer.extension)
     end
 
-    def to_s
+    def content_string
       @serializer.create_archive(@record_data)
     end
   end
