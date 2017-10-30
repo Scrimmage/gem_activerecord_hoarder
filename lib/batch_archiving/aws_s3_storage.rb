@@ -40,7 +40,7 @@ module BatchArchiving
     private
 
     def key_with_prefix(key)
-      File.join(@key_prefix, key.content_string)
+      File.join(@key_prefix, key.to_s)
     end
 
     def s3_acl

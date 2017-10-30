@@ -5,7 +5,7 @@ module BatchArchiving
     end
 
     module ClassMethods
-      def restore_date(date)
+      def restore_archive_records(date)
         storage = ::BatchArchiving::Storage.new(self.table_name)
         key = ::BatchArchiving::StorageKey.from_date(date, :json)
         dataIO = storage.fetch_data(key)

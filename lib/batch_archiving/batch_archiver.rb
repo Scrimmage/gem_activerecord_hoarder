@@ -5,10 +5,8 @@ class ::BatchArchiving::BatchArchiver
   end
 
   def archive_batch
-    while @record_collector.collect_batch
-      @record_collector.with_batch(delete_on_success: true) do |batch|
-        @archive_storage.store_archive(batch)
-      end
+    @record_collector.in_batches(delete_on_success: true) do |batch|
+      @archive_storage.store_data(batch)
     end
   end
 

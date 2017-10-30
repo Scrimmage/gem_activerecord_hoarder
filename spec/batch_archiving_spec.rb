@@ -39,7 +39,7 @@ RSpec.describe BatchArchiving do
 
     before :each do
       allow(::BatchArchiving::Storage).to receive(:new).and_return(storage)
-      allow(storage).to receive(:store_archive).and_return(true)
+      allow(storage).to receive(:store_data).and_return(true)
     end
 
     context "with records only in current week" do
@@ -155,13 +155,13 @@ RSpec.describe BatchArchiving do
 
     it "fully processes one record batch before moving on to the next" do
       expect(collector).to receive(:collect_batch)
-      expect(storage).to receive(:store_archive).and_return(true)
+      expect(storage).to receive(:store_data).and_return(true)
       expect(collector).to receive(:destroy_current_records!)
       expect(collector).to receive(:collect_batch)
     end
 
     it "does not delete a record that wasn't successfully archived" do
-      expect(storage).to receive(:store_archive).and_return(false)
+      expect(storage).to receive(:store_data).and_return(false)
       expect(collector).not_to receive(:destroy_current_records!)
     end
   end

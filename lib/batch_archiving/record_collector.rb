@@ -5,6 +5,17 @@ class ::BatchArchiving::RecordCollector
     @model_class = model_class
   end
 
+  def in_batches(delete_on_success: false)
+    while collect_batch
+      success = yield @batch
+      return if !success
+      next if !delete_on_success
+      destroy_current_records!
+    end
+  end
+
+  private
+
   def collect_batch
     activate_limit if batch_data_cached? && !limit_toggled?
     if limit_toggled?
@@ -16,15 +27,6 @@ class ::BatchArchiving::RecordCollector
     end
     batch_data_cached?
   end
-
-  def with_batch(delete_on_success: false)
-    raise "no records cached, run `retrieve_batch`" if !batch_data_cached?
-    success = yield @batch
-    return if !delete_on_success || !success
-    destroy_current_records!
-  end
-
-  private
 
   def activate_limit
     @relative_limit = [@batch.date.end_of_week + 1, archive_timeframe_upper_limit].min
