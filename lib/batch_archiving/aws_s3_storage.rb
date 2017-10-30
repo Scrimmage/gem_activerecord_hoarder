@@ -53,10 +53,10 @@ module BatchArchiving
 
     def s3_client
       @s3_client ||= begin
-        access_key_id = storage_options[OPTION_ACCESS_KEY_ID]
-        secret_access_key = storage_options[OPTIONS_SECRET_ACCESS_KEY]
+        access_key_id = storage_options[OPTION_ACCESS_KEY_ID] or raise StorageError.new("access_key_id missing")
+        secret_access_key = storage_options[OPTIONS_SECRET_ACCESS_KEY] or raise StorageError.new("secret_access_key missing")
         credentials = Aws::Credentials.new(access_key_id, secret_access_key)
-        region = storage_options[OPTION_REGION]
+        region = storage_options[OPTION_REGION] or raise StorageError.new("region missing")
         Aws::S3::Client.new(credentials: credentials, region: region)
       end
     end
