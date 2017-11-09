@@ -1,6 +1,6 @@
-class ::BatchArchiving::BatchArchiver
+class ::ActiverecordHoarder::BatchArchiver
   def initialize(model_class, storage = nil)
-    @record_collector = ::BatchArchiving::RecordCollector.new(model_class)
+    @record_collector = ::ActiverecordHoarder::RecordCollector.new(model_class)
     @archive_storage = storage || default_storage_for_records(model_class.table_name)
   end
 
@@ -11,6 +11,6 @@ class ::BatchArchiving::BatchArchiver
   end
 
   def default_storage_for_records(table_name)
-    ::BatchArchiving::Storage.new(table_name)
+    ::ActiverecordHoarder::Storage.new(table_name)
   end
 end

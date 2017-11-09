@@ -1,20 +1,20 @@
-# BatchArchiving
+# Activerecord Hoarder
 
-archive records in batches
+hoard records
 
 ## 1 Use
 
-### 1.1 add archiving functionality to a model
+### 1.1 make model a hoarder
 ```
 class ExampleModel < ActiveRecord::Base
-  batch_archivable
+  acts_as_hoarder
 end
 ```
 
-### 1.2  archiving records
+### 1.2  hoarding records
 from console:
 ```
-ExampleModel.archive_batch
+ExampleModel.hoard
 ```
 will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models>/<year>/<month>/<year>-<month>-<day>.json` and json formatted content
 
@@ -34,11 +34,11 @@ Make a clone. Make a branch. Install dependencies.
 
 #### Configure database
 
-Create config file from template (`cp config/dbspec.yml.template config/dbspec.yml`). Change database from `postgresql` to `sqlite3` and database name from `batch_archiving` to `<as_desired>.sqlite3`.
+Create config file from template (`cp config/dbspec.yml.template config/dbspec.yml`). Change database from `postgresql` to `sqlite3` and database name from `activerecord_hoarder` to `<as_desired>.sqlite3`.
 
 #### Configure archive
 
-Create config file from template (`cp config/batch_archiving.yml.template config/batch_archiving.yml`). Add your S3 credentials `access_key_id` and `secret_access_key` for target bucket `bucket`. Change `region` if necessary. If you want, change `acl` and add `bucket_sub_dir`.
+Create config file from template (`cp config/activerecord_hoarder.yml.template config/activerecord_hoarder.yml`). Add your S3 credentials `access_key_id` and `secret_access_key` for target bucket `bucket`. Change `region` if necessary. If you want, change `acl` and add `bucket_sub_dir`.
 
 #### Hop into sandbox
 ```

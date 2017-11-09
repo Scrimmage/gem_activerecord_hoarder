@@ -1,4 +1,4 @@
-module ::BatchArchiving
+module ::ActiverecordHoarder
   class Batch
     RECORD_DATE_FIELD = "created_at"
 
@@ -8,7 +8,7 @@ module ::BatchArchiving
 
     def initialize(record_data)
       @record_data = record_data
-      @serializer = ::BatchArchiving::Serializer
+      @serializer = ::ActiverecordHoarder::Serializer
     end
 
     def date
@@ -16,7 +16,7 @@ module ::BatchArchiving
     end
 
     def key
-      @key ||= ::BatchArchiving::StorageKey.from_date(date, @serializer.extension)
+      @key ||= ::ActiverecordHoarder::StorageKey.from_date(date, @serializer.extension)
     end
 
     def content_string

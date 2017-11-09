@@ -1,4 +1,4 @@
-module ::BatchArchiving
+module ::ActiverecordHoarder
   class StorageError < StandardError
   end
 end

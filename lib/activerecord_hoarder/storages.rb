@@ -1,11 +1,11 @@
-module ::BatchArchiving
+module ::ActiverecordHoarder
   class Storages
     STORAGE_DICT = {
-      aws_s3: ::BatchArchiving::AwsS3
+      aws_s3: ::ActiverecordHoarder::AwsS3
     }
 
     def self.check_storage(storage_key)
-      raise ::BatchArchiving::StorageError.new("unknown storage (#{storage_key}), known keys are #{STORAGE_DICT.keys}") if !is_valid_storage?(storage_key)
+      raise ::ActiverecordHoarder::StorageError.new("unknown storage (#{storage_key}), known keys are #{STORAGE_DICT.keys}") if !is_valid_storage?(storage_key)
     end
 
     def self.is_valid_storage?(storage_key)

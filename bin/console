@@ -18,12 +18,12 @@ else
   raise "database configuration file #{dbspec_location} not found"
 end
 
-require "batch_archiving"
+require "activerecord_hoarder"
 
-storage_config_path = "config/batch_archiving.yml"
+storage_config_path = "config/activerecord_hoarder.yml"
 raise "storage configuration file #{storage_config_path}` not found" if !File.exists?(storage_config_path)
 storage_options = YAML.load_file(storage_config_path)
-::BatchArchiving::Storage.configure(storage: :aws_s3, storage_options: storage_options)
+::ActiverecordHoarder::Storage.configure(storage: :aws_s3, storage_options: storage_options)
 
 require "irb"
 IRB.start(__FILE__)

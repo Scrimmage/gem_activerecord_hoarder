@@ -1,3 +1,3 @@
 class Example < ActiveRecord::Base
-  batch_archivable
+  acts_as_hoarder
 end

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe BatchArchiving do
+RSpec.describe ActiverecordHoarder do
 
   around(:all) do |example|
     current_zone = Time.zone
@@ -12,17 +12,17 @@ RSpec.describe BatchArchiving do
   end
 
   it "has a version number" do
-    expect(BatchArchiving::VERSION).not_to be nil
+    expect(ActiverecordHoarder::VERSION).not_to be nil
   end
 
-  it "extends ::ActiveRecord::Base with batch_archivable" do
-    expect(::ActiveRecord::Base.methods).to include(:batch_archivable)
+  it "extends ::ActiveRecord::Base with acts_as_hoarder" do
+    expect(::ActiveRecord::Base.methods).to include(:acts_as_hoarder)
   end
 
-  describe "batch_archivable" do
+  describe "acts_as_hoarder" do
     context "successfully included in ActiveRecord model" do
-      it "extends with public class method .archive_batch" do
-        expect(ExampleArchivable.methods).to include(:archive_batch)
+      it "extends with public class method .hoard" do
+        expect(ExampleHoarder.methods).to include(:hoard)
       end
     end
   end
@@ -38,7 +38,7 @@ RSpec.describe BatchArchiving do
     let(:storage) { double }
 
     before :each do
-      allow(::BatchArchiving::Storage).to receive(:new).and_return(storage)
+      allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
       allow(storage).to receive(:store_data).and_return(true)
     end
 
@@ -57,15 +57,15 @@ RSpec.describe BatchArchiving do
           deleted: true,
           records_date: Date.today
         )
-        ExampleArchivable.archive_batch
+        ExampleHoarder.hoard
       end
 
       it "ignores current day" do
-        expect(ExampleArchivable.unscoped.to_a).to include(*@non_archivable_records)
+        expect(ExampleHoarder.unscoped.to_a).to include(*@non_archivable_records)
       end
 
       it "archives previous days" do
-        expect(ExampleArchivable.unscoped.to_a).not_to include(*@archivable_records)
+        expect(ExampleHoarder.unscoped.to_a).not_to include(*@archivable_records)
       end
     end
 
@@ -118,39 +118,39 @@ RSpec.describe BatchArchiving do
           end_time: Time.now,
           start_time: Time.now.getutc.beginning_of_week
         )
-        ExampleArchivable.archive_batch
+        ExampleHoarder.hoard
       end
 
       it "skips records from days with active records" do
-        expect(ExampleArchivable.unscoped.to_a).to include(*@non_archivable_records)
+        expect(ExampleHoarder.unscoped.to_a).to include(*@non_archivable_records)
       end
 
       it "archives one week of fully deleted records" do
-        expect(ExampleArchivable.unscoped.to_a).not_to include(*@archivable_records)
+        expect(ExampleHoarder.unscoped.to_a).not_to include(*@archivable_records)
       end
 
       it "stops after one week" do
-        expect(ExampleArchivable.unscoped.to_a).to include(*@out_of_range_records)
+        expect(ExampleHoarder.unscoped.to_a).to include(*@out_of_range_records)
       end
     end
   end
 
   describe "workflow" do
     let(:batch1) { double }
-    let(:collector) { ::BatchArchiving::RecordCollector.new(ExampleArchivable) }
+    let(:collector) { ::ActiverecordHoarder::RecordCollector.new(ExampleHoarder) }
     let(:storage) { double }
 
     before do
-      allow(::BatchArchiving::Storage).to receive(:new).and_return(storage)
-      allow(::BatchArchiving::RecordCollector).to receive(:new).and_return(collector)
+      allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
+      allow(::ActiverecordHoarder::RecordCollector).to receive(:new).and_return(collector)
       allow(collector).to receive(:collect_batch).and_return(true, false)
       allow(collector).to receive(:batch_data_cached?).and_return(true)
-      allow_any_instance_of(::BatchArchiving::BatchArchiver).to receive(:compose_key).and_return("key")
+      allow_any_instance_of(::ActiverecordHoarder::BatchArchiver).to receive(:compose_key).and_return("key")
       allow(collector).to receive(:destroy_current_records!)
     end
 
     after do
-      ExampleArchivable.archive_batch
+      ExampleHoarder.hoard
     end
 
     it "fully processes one record batch before moving on to the next" do
