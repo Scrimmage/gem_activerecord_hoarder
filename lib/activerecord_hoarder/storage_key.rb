@@ -1,4 +1,4 @@
-module BatchArchiving
+module ActiverecordHoarder
   class StorageKey
     def self.from_date(date, file_extension = nil)
       key_parts = [date.year.to_s, date.month.to_s, date.iso8601]

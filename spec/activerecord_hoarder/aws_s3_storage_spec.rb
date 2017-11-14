@@ -2,13 +2,13 @@ require 'spec_helper'
 
 DATA_TEMPLATE = "data for key %{key}"
 
-RSpec.describe ::BatchArchiving::AwsS3 do
+RSpec.describe ::ActiverecordHoarder::AwsS3 do
   describe ".fetch_data" do
     let(:date_data) { DATA_TEMPLATE % { key: full_key } }
     let(:full_key) { File.join(table_name, key_string) }
-    let(:key) { double(content_string: key_string) }
+    let(:key) { double(key_string, to_s: key_string) }
     let(:key_string) { "key" }
-    let(:storage) { ::BatchArchiving::AwsS3.new(table_name, storage_options) }
+    let(:storage) { ::ActiverecordHoarder::AwsS3.new(table_name, storage_options) }
     let(:storage_options) { {} }
     let(:table_name) { "records" }
 

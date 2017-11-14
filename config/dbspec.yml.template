@@ -1,2 +1,2 @@
 adapter: postgresql
-database: batch_archiving
+database: activerecord_hoarder

@@ -1,4 +1,4 @@
-module BatchArchiving
+module ActiverecordHoarder
   class AwsS3
     DEFAULT_ACL = "private"
     OPTION_CONTENT_ACCESS = "acl"
@@ -25,7 +25,7 @@ module BatchArchiving
       begin
         response = s3_client.get_object(bucket: s3_bucket, key: full_key)
       rescue Aws::S3::Errors::NoSuchKey => e
-        raise ::BatchArchiving::StorageError.new("fetch_data erred with '#{e.class}':'#{e.message}'' trying to access '#{full_key}'' in bucket: '#{s3_bucket}'")
+        raise ::ActiverecordHoarder::StorageError.new("fetch_data erred with '#{e.class}':'#{e.message}'' trying to access '#{full_key}'' in bucket: '#{s3_bucket}'")
       end
       response.body
     end

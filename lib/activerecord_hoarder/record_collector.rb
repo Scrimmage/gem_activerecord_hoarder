@@ -1,4 +1,4 @@
-class ::BatchArchiving::RecordCollector
+class ::ActiverecordHoarder::RecordCollector
   attr_reader :relative_limit
 
   def initialize(model_class)
@@ -54,14 +54,14 @@ class ::BatchArchiving::RecordCollector
   end
 
   def retrieve_first_batch
-    @batch_query = ::BatchArchiving::BatchQuery.new(archive_timeframe_upper_limit, @model_class)
+    @batch_query = ::ActiverecordHoarder::BatchQuery.new(archive_timeframe_upper_limit, @model_class)
     batch_data = @model_class.connection.exec_query(@batch_query.fetch)
-    ::BatchArchiving::Batch.from_records(batch_data)
+    ::ActiverecordHoarder::Batch.from_records(batch_data)
   end
 
   def retrieve_next_batch
-    @batch_query = ::BatchArchiving::BatchQuery.new(relative_limit, @model_class)
+    @batch_query = ::ActiverecordHoarder::BatchQuery.new(relative_limit, @model_class)
     batch_data = @model_class.connection.exec_query(@batch_query.fetch)
-    ::BatchArchiving::Batch.from_records(batch_data)
+    ::ActiverecordHoarder::Batch.from_records(batch_data)
   end
 end

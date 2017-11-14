@@ -1,4 +1,4 @@
-module BatchArchiving
+module ActiverecordHoarder
   class BatchQuery
     SUBQUERY_DELETED_RECORDS = <<~SQL.strip_heredoc
       SELECT
