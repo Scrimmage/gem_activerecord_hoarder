@@ -6,7 +6,7 @@ require "activerecord_hoarder/version"
 Gem::Specification.new do |spec|
   spec.name = "activerecord_hoarder"
   spec.version = ActiverecordHoarder::VERSION
-  spec.authors = ["mchadwick MatthiasEngh"]
+  spec.authors = ["Matthias Engh"]
   spec.email = ["matthias@wescrimmage.com"]
 
   spec.summary = %q{hoards records}
@@ -14,18 +14,10 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/Scrimmage/gem_batch_archiving"
   spec.license = "MIT"
 
-  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
-  # to allow pushing to a single host or delete this section to allow pushing to any host.
-  if spec.respond_to?(:metadata)
-    spec.metadata["allowed_push_host"] = ""
-  else
-    raise "RubyGems 2.0 or newer is required to protect against " \
-      "public gem pushes."
-  end
-
-  spec.files = Dir["lib/**/*", "README.md"]
-
-  spec.require_path = "lib"
+  spec.files = `git ls-files -z`.split("\x0")
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
+  spec.require_paths = ["lib"]
 
   spec.add_dependency "activerecord", [">= 4.2", "< 6.0"]
 
