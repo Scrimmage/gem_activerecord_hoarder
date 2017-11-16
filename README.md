@@ -7,7 +7,7 @@ hoard records
 ### 1.0 configure
 before performing `1.2` and `1.3` the `ActiverecordHoarder::Storage` needs to be configured with
  - `storage: :aws_s3` - only storage currently implemented
- - `storage_options: {}` with s3 credentials, connection details and default permissions
+ - `storage_options: {...}` with s3 credentials, connection details and default permissions
 
 #### Amazon S3 options
 - `access_key_id` *required* - amazon credential
