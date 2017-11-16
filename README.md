@@ -21,7 +21,7 @@ will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models
 ### 1.3 restoring records
 from console:
 ```
-ExampleModel.restore_date(Date.new(<Y>,<m>,<d>))
+ExampleModel.restore_archive_records(Date.new(<Y>,<m>,<d>))
 ```
 
 ## 2 Development
