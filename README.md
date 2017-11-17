@@ -1,6 +1,7 @@
 # Activerecord Hoarder
 
 hoard records
+[![Build Status](https://travis-ci.org/Scrimmage/gem_activerecord_hoarder.svg?branch=travis-bump)](https://travis-ci.org/Scrimmage/gem_activerecord_hoarder)
 
 ## 1 Use
 
