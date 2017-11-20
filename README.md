@@ -1,4 +1,5 @@
 # Activerecord Hoarder
+[![Build Status](https://travis-ci.org/Scrimmage/gem_activerecord_hoarder.svg?branch=travis-bump)](https://travis-ci.org/Scrimmage/gem_activerecord_hoarder) [![Maintainability](https://api.codeclimate.com/v1/badges/7638f5eb8bdf48b29a30/maintainability)](https://codeclimate.com/github/Scrimmage/gem_activerecord_hoarder/maintainability)
 
 hoard records
 
