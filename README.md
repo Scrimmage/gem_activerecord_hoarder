@@ -4,6 +4,20 @@ hoard records
 
 ## 1 Use
 
+### 1.0 configure
+before performing `1.2` and `1.3` the `ActiverecordHoarder::Storage` needs to be configured with
+ - `storage: :aws_s3` - only storage currently implemented
+ - `storage_options: {...}` with s3 credentials, connection details and default permissions
+
+#### Amazon S3 options
+- `access_key_id` *required* - amazon credential
+- `acl` *required* - amazon canned ACL (private, public-read, ...)*
+- `bucket` *required* - amazon connection detail
+- `bucket_sub_dir` *optional* - amazon key prefix
+- `region` *required* - amazon connection detail
+- `secret_access_key` *required* - amazon credential
+
+
 ### 1.1 make model a hoarder
 ```
 class ExampleModel < ActiveRecord::Base
@@ -21,7 +35,7 @@ will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models
 ### 1.3 restoring records
 from console:
 ```
-ExampleModel.restore_date(Date.new(<Y>,<m>,<d>))
+ExampleModel.restore_archive_records(Date.new(<Y>,<m>,<d>))
 ```
 
 ## 2 Development
