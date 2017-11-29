@@ -7,8 +7,7 @@ class ::ActiverecordHoarder::RecordCollector
 
   def in_batches(delete_on_success: false)
     while collect_batch
-      success = yield @batch
-      return if !success
+      yield @batch
       next if !delete_on_success
       destroy_current_records!
     end
