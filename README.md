@@ -62,9 +62,9 @@ bundler exec bin/console
 
 #### bin/example
 Convenience functionality
-- `require_relative "bin/example/schema"` for creating an example table `examples`
-- `require_relative "bin/example/example"` for an example archivable model `Example`
-- `require_relative "bin/example/fixture"` for a factory method `create_examples(count, start: 0, deleted: true)` for creating examples
+- `require_relative "example/schema"` for creating an example table `examples`
+- `require_relative "example/example"` for an example archivable model `Example`
+- `require_relative "example/fixture"` for a factory method `create_examples(count, start: 0, deleted: true)` for creating examples
 
 ### 2.2 testing it
 
