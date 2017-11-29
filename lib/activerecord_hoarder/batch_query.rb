@@ -1,82 +1,52 @@
 module ActiverecordHoarder
   class BatchQuery
-    SUBQUERY_DELETED_RECORDS = <<~SQL.strip_heredoc
-      SELECT
-        %{fields}
-      FROM
-        %{table_name}
-      WHERE
-        deleted_at IS NOT NULL
+    SUBQUERY_CONDITION = <<~SQL.strip_heredoc
+      WHERE created_at > %{outer_limit_lower}
+      AND created_at < %{outer_limit_upper}
     SQL
 
-    SUBQUERY_NON_DELETED_RECORDS = <<~SQL.strip_heredoc
-      SELECT
-        %{fields}
-      FROM
-        %{table_name}
-      WHERE
-        deleted_at IS NULL
-    SQL
-
-    QUERY_TEMPLATE_FOR_DATE_DELETION = <<~SQL.strip_heredoc
-      DELETE FROM %{table_name} WHERE date(created_at) = '%{date}';
-    SQL
-
-    QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT = <<~SQL.strip_heredoc
-      SELECT
-        %{fields}
-      FROM
-        %{table_name}
-      WHERE
-        date(created_at) = (
-          SELECT
-            min(dates_with_deleted.creation_date)
-          FROM
-            (
-              #{SUBQUERY_DELETED_RECORDS % {
-                  fields: "date(created_at) as creation_date",
-                  table_name: "%{table_name}"
-              }}
-            ) as dates_with_deleted
-            LEFT OUTER JOIN
-            (
-              #{SUBQUERY_NON_DELETED_RECORDS % {
-                fields: "date(created_at) as creation_date",
-                table_name: "%{table_name}"
-              }}
-            ) as dates_with_non_deleted
-            ON
-              dates_with_deleted.creation_date = dates_with_non_deleted.creation_date
-            WHERE
-              dates_with_non_deleted.creation_date IS NULL
-            AND
-              created_at < '%{limit}'
-        )
+    QUERY_TEMPLATE_FOR_DELETE = <<~SQL.strip_heredoc
+      DELETE FROM %{table_name} 
+      #{ SUBQUERY_CONDITION }
       ;
     SQL
 
-    def initialize(limit, model_class)
-      @limit = limit
+    QUERY_TEMPLATE_FOR_FETCH = <<~SQL.strip_heredoc
+      SELECT %{fields}
+      FROM %{table_name}
+      #{ SUBQUERY_CONDITION }
+      ;
+    SQL
+
+    def initialize(model_class, outer_limit_lower, outer_limit_upper)
       @model_class = model_class
+      @outer_limit_upper = outer_limit_upper
+      @outer_limit_lower = outer_limit_lower
     end
 
-    def delete(date)
-      QUERY_TEMPLATE_FOR_DATE_DELETION % {
-        fields: @model_class.column_names.join(", "),
-        date: date,
-        table_name: table_name
+    def delete
+      QUERY_TEMPLATE_FOR_DELETE % {
+        fields: fields,
+        outer_limit_lower: @outer_limit_lower,
+        outer_limit_upper: @outer_limit_upper,
+        table_name: table_name,
       }
     end
 
     def fetch
-      QUERY_TEMPLATE_FOR_RECORD_WITH_LIMIT % {
-        fields: @model_class.column_names.join(", "),
-        limit: @limit,
-        table_name: table_name
+      QUERY_TEMPLATE_FOR_FETCH % {
+        fields: fields,
+        outer_limit_lower: @outer_limit_lower,
+        outer_limit_upper: @outer_limit_upper,
+        table_name: table_name,
       }
     end
 
     private
+
+    def fields
+      "*"
+    end
 
     def table_name
       @model_class.table_name
