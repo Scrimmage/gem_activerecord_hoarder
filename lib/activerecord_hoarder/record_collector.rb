@@ -1,8 +1,10 @@
 class ::ActiverecordHoarder::RecordCollector
   attr_reader :relative_limit
 
-  def initialize(model_class)
+  def initialize(model_class, datetime: nil, max_count: nil)
+    @datetime = datetime
     @model_class = model_class
+    @max_count = max_count
   end
 
   def in_batches(delete_on_success: false)
