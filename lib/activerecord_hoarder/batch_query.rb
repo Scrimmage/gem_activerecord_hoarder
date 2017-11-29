@@ -1,8 +1,9 @@
 module ActiverecordHoarder
   class BatchQuery
+
     SUBQUERY_CONDITION = <<~SQL.strip_heredoc
-      WHERE created_at > %{outer_limit_lower}
-      AND created_at < %{outer_limit_upper}
+      WHERE %{condition_column} > %{outer_limit_lower}
+      AND %{condition_column} < %{outer_limit_upper}
     SQL
 
     QUERY_TEMPLATE_FOR_DELETE = <<~SQL.strip_heredoc
@@ -26,6 +27,7 @@ module ActiverecordHoarder
 
     def delete
       QUERY_TEMPLATE_FOR_DELETE % {
+        condition_column: ::ActiverecordHoarder::Constants::TIME_LIMITING_COLUMN,
         fields: fields,
         outer_limit_lower: @outer_limit_lower,
         outer_limit_upper: @outer_limit_upper,
@@ -35,6 +37,7 @@ module ActiverecordHoarder
 
     def fetch
       QUERY_TEMPLATE_FOR_FETCH % {
+        condition_column: ::ActiverecordHoarder::Constants::TIME_LIMITING_COLUMN,
         fields: fields,
         outer_limit_lower: @outer_limit_lower,
         outer_limit_upper: @outer_limit_upper,
