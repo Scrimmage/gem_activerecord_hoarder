@@ -2,8 +2,7 @@ module ActiverecordHoarder
   class BatchQuery
 
     SUBQUERY_CONDITION = <<~SQL.strip_heredoc
-      WHERE %{condition_column} > "%{outer_limit_lower}"
-      AND %{condition_column} < "%{outer_limit_upper}"
+      WHERE %{condition_column} BETWEEN "%{inner_lower_limit}" AND "%{inner_upper_limit}"
     SQL
 
     QUERY_TEMPLATE_FOR_DELETE = <<~SQL.strip_heredoc
@@ -19,18 +18,18 @@ module ActiverecordHoarder
       ;
     SQL
 
-    def initialize(model_class, outer_limit_lower, outer_limit_upper)
+    def initialize(model_class, inner_lower_limit, inner_upper_limit)
       @model_class = model_class
-      @outer_limit_upper = outer_limit_upper
-      @outer_limit_lower = outer_limit_lower
+      @inner_lower_limit = inner_lower_limit
+      @inner_upper_limit = inner_upper_limit
     end
 
     def delete
       QUERY_TEMPLATE_FOR_DELETE % {
         condition_column: ::ActiverecordHoarder::Constants::TIME_LIMITING_COLUMN,
         fields: fields,
-        outer_limit_lower: @outer_limit_lower,
-        outer_limit_upper: @outer_limit_upper,
+        inner_lower_limit: @inner_lower_limit,
+        inner_upper_limit: @inner_upper_limit,
         table_name: table_name,
       }
     end
@@ -39,8 +38,8 @@ module ActiverecordHoarder
       QUERY_TEMPLATE_FOR_FETCH % {
         condition_column: ::ActiverecordHoarder::Constants::TIME_LIMITING_COLUMN,
         fields: fields,
-        outer_limit_lower: @outer_limit_lower,
-        outer_limit_upper: @outer_limit_upper,
+        inner_lower_limit: @inner_lower_limit,
+        inner_upper_limit: @inner_upper_limit,
         table_name: table_name,
       }
     end
