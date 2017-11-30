@@ -13,7 +13,7 @@ RSpec.shared_examples "limit inclusion" do |comparison, limit|
 
   context "excluded" do
     let(:full_comparison) { comparison }
-    let(:excluding) { true }
+    let(:including) { false }
 
     it "doesn't allow limit" do
     end
@@ -21,7 +21,7 @@ RSpec.shared_examples "limit inclusion" do |comparison, limit|
 
   context "included" do
     let(:full_comparison) { comparison + "=" }
-    let(:excluding) { false }
+    let(:including) { true }
 
     it "allows limit" do
     end
@@ -30,20 +30,20 @@ end
 
 RSpec.shared_examples "limit conditions" do |method, limits|
   let(:limited_query) { query_object.send(method) }
-  let(:query_kwargs) { { exclude_lower: exclude_lower, exclude_upper: exclude_upper } }
+  let(:query_kwargs) { { include_lower: include_lower, include_upper: include_upper } }
   let(:query_object) { described_class.new(*query_args, **query_kwargs) }
 
-  let(:exclude_lower) { false }
-  let(:exclude_upper) { false }
+  let(:include_lower) { true }
+  let(:include_upper) { true }
 
   describe "lower limit" do
-    let(:exclude_lower) { excluding }
+    let(:include_lower) { including }
 
     include_examples "limit inclusion", ">", limits[0]
   end
 
   describe "upper limit" do
-    let(:exclude_upper) { excluding }
+    let(:include_upper) { including }
 
     include_examples "limit inclusion", "<", limits[1]
   end

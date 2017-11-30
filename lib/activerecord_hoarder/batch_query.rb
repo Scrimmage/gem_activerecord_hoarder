@@ -18,9 +18,9 @@ module ActiverecordHoarder
       ;
     SQL
 
-    def initialize(model_class, inner_lower_limit, inner_upper_limit, exclude_lower: false, exclude_upper: false)
-      @include_lower = exclude_lower ? "" : "="
-      @include_upper = exclude_upper ? "" : "="
+    def initialize(model_class, inner_lower_limit, inner_upper_limit, include_lower: true, include_upper: true)
+      @include_lower = include_lower ? "=" : ""
+      @include_upper = include_upper ? "=" : ""
       @inner_lower_limit = inner_lower_limit
       @inner_upper_limit = inner_upper_limit
       @model_class = model_class
