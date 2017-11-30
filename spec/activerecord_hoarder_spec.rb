@@ -35,11 +35,10 @@ RSpec.describe ActiverecordHoarder do
         JSON.pretty_generate(group.collect(&:serializable_hash))
       }
     }
-    let(:storage) { double }
+    let(:storage) { double("storage", store_data: true) }
 
     before :each do
       allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
-      allow(storage).to receive(:store_data).and_return(true)
     end
 
     context "with records only in current week" do
