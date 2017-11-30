@@ -2,8 +2,8 @@ module ActiverecordHoarder
   class BatchQuery
 
     SUBQUERY_CONDITION = <<~SQL.strip_heredoc
-      WHERE %{condition_column} > %{outer_limit_lower}
-      AND %{condition_column} < %{outer_limit_upper}
+      WHERE %{condition_column} > "%{outer_limit_lower}"
+      AND %{condition_column} < "%{outer_limit_upper}"
     SQL
 
     QUERY_TEMPLATE_FOR_DELETE = <<~SQL.strip_heredoc
