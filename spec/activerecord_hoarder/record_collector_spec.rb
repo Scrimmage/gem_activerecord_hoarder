@@ -236,8 +236,8 @@ RSpec.describe ::ActiverecordHoarder::RecordCollector do
       let(:hoarder_class) { ExampleHoarder }
       let(:raw_minimum) { creation_times.min.utc }
       let(:raw_result) { subject.send(:get_oldest_datetime) }
-      let(:rounded_minimum) {  raw_minimum - raw_minimum.to_i % 1 }
-      let(:rounded_result) { raw_result - raw_result.to_i % 1 }
+      let(:rounded_minimum) {  raw_minimum - raw_minimum.to_i % 1.second }
+      let(:rounded_result) { raw_result - raw_result.to_i % 1.second }
 
       context "records exist" do
         let(:creation_times) { [5.days.ago, 4.days.ago, 3.days.ago] }
