@@ -15,6 +15,10 @@ RSpec.describe ::ActiverecordHoarder::RecordCollector do
     subject.instance_variable_set(:@batch_query, batch_query)
   end
 
+  describe "accuracy" do
+    it "handles time accuracy gracefully"
+  end
+
   describe "public" do
     describe "in_batches" do
       let(:delete_on_success) { false }
@@ -230,6 +234,10 @@ RSpec.describe ::ActiverecordHoarder::RecordCollector do
 
     describe "get_oldest_datetime" do
       let(:hoarder_class) { ExampleHoarder }
+      let(:raw_minimum) { creation_times.min.utc }
+      let(:raw_result) { subject.send(:get_oldest_datetime) }
+      let(:rounded_minimum) {  raw_minimum - raw_minimum.to_i % 1 }
+      let(:rounded_result) { raw_result - raw_result.to_i % 1 }
 
       context "records exist" do
         let(:creation_times) { [5.days.ago, 4.days.ago, 3.days.ago] }
@@ -241,7 +249,7 @@ RSpec.describe ::ActiverecordHoarder::RecordCollector do
         end
 
         it "returns oldest date" do
-          expect(subject.send(:get_oldest_datetime)).to eq(creation_times.min.utc)
+          expect(rounded_result).to eq(rounded_minimum)
         end
       end
 
