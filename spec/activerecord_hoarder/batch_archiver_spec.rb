@@ -14,11 +14,6 @@ RSpec.describe ::ActiverecordHoarder::BatchArchiver do
     let(:batch2_invalid) { double("batch2") }
     let(:batch3) { double("batch3") }
 
-    before do
-      allow(batch_collector).to receive(:next?).and_return(true, true, false)
-      allow(batch_collector).to receive(:next).and_return(batch1, batch2_invalid, batch3)
-    end
-
     after do
       subject.archive_batch
     end
