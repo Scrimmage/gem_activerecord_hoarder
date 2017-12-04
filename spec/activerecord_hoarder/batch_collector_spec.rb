@@ -20,9 +20,13 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
   end
 
   describe "public" do
+    let(:batch) { double("batch") }
+    let(:first_lower_limit) { double("first_lower_limit") }
+    let(:first_upper_limit) {  double("first_upper_limit") }
+
     describe "in_batches" do
       it "is removed" do
-        expect(subject).not_to respond_to?(:in_batches)
+        expect(subject).not_to respond_to(:in_batches)
       end
     end
 
@@ -31,16 +35,30 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         expect(subject).to respond_to(:next)
       end
 
-      context "next batch is cached" do
-        it "does not hit the database"
+      before do
+        expect(subject).to receive(:next)
       end
 
-      context "next batch is not cached" do
-        it "retrieves the batch from database and caches it"
+      it "uses retreival functionality implemented by next_batch" do
+        expect(subject).to receive(:next_batch)
+        subject.send(:next)
       end
 
-      it "returns next batch"
-      it "updates position"
+      it "caches the batch" do
+        expect(subject.send(:batch_data_cached?)).to be(false)
+        subject.send(:next)
+        expect(subject.send(:batch_data_cached?)).to be(true)
+      end
+
+      it "returns next batch" do
+        expect(subject.next).to eq(batch)
+      end
+
+      it "updates position" do
+        expect(subject.lower_limit).to eq(first_lower_limit)
+        subject.next
+        expect(subject.lower_limit).to eq(first_upper_limit)
+      end
     end
 
     describe "next?" do
@@ -48,26 +66,9 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         expect(subject).to respond_to(:next?)
       end
 
-      context "next batch is cached" do
-        it "does not hit the database"
-      end
-
-      context "next batch is not chached" do
-        it "hits the database"
-      end
-
-      context "limit is reached" do
-        it "returns false and caches empty batch"
-      end
-
-      context "limit is not yet reached" do
-        context "there are no more records" do
-          it "returns false and caches empty batch"
-        end
-
-        context "further records exist" do
-          it "caches batch and returns true"
-        end
+      it "uses next_batch functionality and checks result presence" do
+        expect(subject).to receive(:next_batch).and_return(batch)
+        expect(batch).to receive(:present?)
       end
     end
   end
@@ -258,6 +259,62 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
+    describe "next_batch" do
+      it "is implemented" do
+        expect(subject).to respond_to(:next_batch)
+      end
+
+      before do
+        expect(subject).to receive(:next_batch)
+      end
+
+      context "next batch is cached" do
+        it "does not hit the database" do
+          expect(subject).not_to receive(:retrieve_batch)
+          subject.send(:next_batch)
+        end
+      end
+
+      context "next batch is not cached" do
+        it "hits the database" do
+          expect(subject).to receive(:retrieve_batch).and_return(batch)
+          subject.send(:next_batch)
+        end
+
+        it "caches the next batch" do
+          expect(subject.send(:next_batch_data_cached?)).to be(false)
+          subject.send(:next_batch)
+          expect(subject.send(:next_batch_data_cached?)).to be(true)
+        end
+      end
+
+      it "returns next batch" do
+        expect(subject.send(:next_batch)).to eq(batch)
+      end
+    end
+
+    describe "next_batch_data_cached?" do
+      it "is implemented" do
+        expect(subject).to respond_to(:next_batch_data_cached?)
+      end
+
+      before do
+        expect(subject).to receive(:next_batch_data_cached?)
+      end
+
+      context "next batch is cached" do
+        it "returns true" do
+          expect(subject.send(:next_batch_data_cached?)).to be(true)
+        end
+      end
+
+      context "next batch is not cached" do
+        it "returns false" do
+          expect(subject.send(:next_batch_data_cached?)).to be(false)
+        end
+      end
+    end
+
     describe "upper_limit" do
       before do
         allow(subject).to receive(:relative_upper_limit).and_return(relative_upper_limit)
@@ -316,15 +373,30 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         allow(::ActiverecordHoarder::Batch).to receive(:from_records).and_return(batch_instance)
       end
 
-      it "uses batch_query to retrieve batch_data" do
-        expect(batch_query).to receive(:fetch)
-        expect(hoarder_connection).to receive(:exec_query).with(fetch_query)
+      after do
         subject.send(:retrieve_batch)
       end
 
-      it "uses retrieved batch_data to return Batch instance" do
-        expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data)
-        expect(subject.send(:retrieve_batch)).to eq(batch_instance)
+      context "limit is reached" do
+        it "does not hit the database" do
+          expect(hoarder_connection).not_to receive(:exec_query)
+        end
+
+        it "returns an empty batch" do
+          expect(subject).to receive(:retrieve_batch).and_return(empty_batch)
+        end
+      end
+
+      context "limit is not yet reached" do
+        it "uses batch_query to retrieve batch_data" do
+          expect(batch_query).to receive(:fetch)
+          expect(hoarder_connection).to receive(:exec_query).with(fetch_query)
+        end
+
+        it "uses retrieved batch_data to return Batch instance" do
+          expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data)
+          expect(subject).to receive(:retrieve_batch).and_return(batch_instance)
+        end
       end
     end
 
