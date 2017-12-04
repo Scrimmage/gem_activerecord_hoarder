@@ -2,8 +2,10 @@ require "spec_helper"
 
 RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
+  let(:batch_instance) { double("batch_instance") }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
+  let(:empty_batch) { double("empty_batch") }
   let(:fetch_query) { "fetch_query" }
   let(:hoarder_class) { double("hoarder_class", connection: hoarder_connection) }
   let(:hoarder_connection) { double("hoarder_connection", exec_quer: nil) }
@@ -13,6 +15,8 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
   before do
     subject.instance_variable_set(:@batch_query, batch_query)
+    allow(::ActiverecordHoarder::Batch).to receive(:from_records).and_return(batch_instance)
+    allow(::ActiverecordHoarder::Batch).to receive(:new).and_return(empty_batch)
   end
 
   describe "accuracy" do
@@ -20,23 +24,20 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
   end
 
   describe "public" do
-    let(:batch) { double("batch") }
     let(:first_lower_limit) { double("first_lower_limit") }
-    let(:first_upper_limit) {  double("first_upper_limit") }
+    let(:first_upper_limit) { double("first_upper_limit") }
 
-    describe "in_batches" do
+    describe "(removed) in_batches" do
       it "is removed" do
         expect(subject).not_to respond_to(:in_batches)
       end
     end
 
     describe "next" do
-      it "is implemented" do
-        expect(subject).to respond_to(:next)
-      end
-
       before do
         expect(subject).to receive(:next).and_call_original
+        allow(subject).to receive(:next_batch).and_return(batch_instance)
+        allow(subject).to receive(:upper_limit).and_return(first_upper_limit)
       end
 
       it "uses retreival functionality implemented by next_batch" do
@@ -45,19 +46,19 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       it "caches the batch" do
-        expect(subject.send(:batch_data_cached?)).to be(false)
+        expect(subject.instance_variable_get(:@batch)).not_to be(batch_instance)
         subject.send(:next)
-        expect(subject.send(:batch_data_cached?)).to be(true)
+        expect(subject.instance_variable_get(:@batch)).to be(batch_instance)
       end
 
       it "returns next batch" do
-        expect(subject.next).to eq(batch)
+        expect(subject.next).to eq(batch_instance)
       end
 
       it "updates position" do
-        expect(subject.lower_limit).to eq(first_lower_limit)
+        expect(subject.send(:lower_limit)).to eq(lower_limit_override)
         subject.next
-        expect(subject.lower_limit).to eq(first_upper_limit)
+        expect(subject.send(:lower_limit)).to eq(first_upper_limit)
       end
     end
 
@@ -67,8 +68,56 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       it "uses next_batch functionality and checks result presence" do
-        expect(subject).to receive(:next_batch).and_return(batch)
-        expect(batch).to receive(:present?)
+        expect(subject).to receive(:next_batch).and_return(batch_instance)
+        expect(batch_instance).to receive(:present?)
+      end
+    end
+
+    describe "next_valid" do
+      before do
+        allow(subject).to receive(:next_batch).and_return(batch_instance)
+        allow(subject).to receive(:upper_limit).and_return(first_upper_limit)
+      end
+
+      context "invalid batch next" do
+        let(:batch_instance) { double("invalid batch", valid?: false) }
+
+        it "returns empty batch" do
+          expect(subject.next_valid).to eq(empty_batch)
+        end
+
+        it "caches empty batch" do
+          expect(subject.instance_variable_get(:@batch)).not_to eq(empty_batch)
+          subject.next_valid
+          expect(subject.instance_variable_get(:@batch)).to eq(empty_batch)
+        end
+
+        it "does not update the absolute limit" do
+          expect(subject).not_to receive(:update_absolute_upper_limit)
+        end
+      end
+
+      context "valid batch next" do
+        let(:batch_instance) { double("valid batch", valid?: true) }
+
+        before do
+          allow(subject).to receive(:update_absolute_upper_limit)
+        end
+
+        it "returns batch" do
+          expect(subject.next_valid).to eq(batch_instance)
+        end
+
+        it "caches batch" do
+          expect(subject.instance_variable_get(:@batch)).not_to eq(batch_instance)
+          subject.next_valid
+          expect(subject.instance_variable_get(:@batch)).to eq(batch_instance)
+        end
+
+        it "updates the absolute limit" do
+          expect(subject).to receive(:update_absolute_upper_limit)
+          subject.next_valid
+        end
       end
     end
   end
@@ -116,10 +165,8 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "batch_data_cached?" do
       context "batch cached" do
-        let(:batch) { double("batch") }
-
         before do
-          subject.instance_variable_set(:@batch, batch)
+          subject.instance_variable_set(:@batch, batch_instance)
           expect(subject.instance_variable_get(:@batch)).not_to be(nil)
         end
 
@@ -276,6 +323,16 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           expect(subject).not_to receive(:retrieve_batch)
           subject.send(:next_batch)
         end
+
+        it "leaves the batch cached" do
+          expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
+          subject.send(:next_batch)
+          expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
+        end
+
+        it "returns the next batch" do
+          expect(subject.send(:next_batch)).to eq(batch_instance)
+        end
       end
 
       context "next batch is not cached" do
@@ -292,7 +349,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       it "returns next batch" do
-        expect(subject.send(:next_batch)).to eq(batch)
+        expect(subject.send(:next_batch)).to eq(batch_instance)
       end
     end
 
@@ -369,13 +426,9 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "retrieve_batch" do
       let(:batch_data) { double("batch_data") }
-      let(:batch_instance) { double("batch_instance") }
-      let(:empty_batch) { double("empty_batch") }
 
       before do
         allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
-        allow(::ActiverecordHoarder::Batch).to receive(:from_records).and_return(batch_instance)
-        allow(::ActiverecordHoarder::Batch).to receive(:new).and_return(empty_batch)
       end
 
       context "limit is reached" do

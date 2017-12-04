@@ -6,16 +6,17 @@ class ::ActiverecordHoarder::BatchCollector
     @max_count = max_count
   end
 
-  def in_batches(delete_on_success: false)
-    return if !find_limits
-    update_query
+  def next(with_absolute: false)
+    @batch = next_batch
+    update_limits(with_absolute)
+    @batch
+  end
 
-    while collect_batch
-      batch_is_valid = yield @batch
-      update_limits_and_query(batch_is_valid)
-      next if !delete_on_success
-      destroy_current_records!
-    end
+  def next_valid
+    valid_batch = next_batch.valid?
+    @batch = valid_batch ? next_batch : ActiverecordHoarder::Batch.new([])
+    update_limits(valid_batch)
+    @batch
   end
 
   private
@@ -77,14 +78,13 @@ class ::ActiverecordHoarder::BatchCollector
     ::ActiverecordHoarder::Batch.from_records(batch_data)
   end
 
-  def update_absolute_upper_limit(success)
-    return if !success
+  def update_absolute_upper_limit
     return if @absolute_upper_limit.present?
     @absolute_upper_limit = @lower_limit.end_of_week
   end
 
   def update_limits(success)
-    update_absolute_upper_limit(success)
+    update_absolute_upper_limit if success
     @lower_limit = upper_limit
     @include_lower_limit = false
   end
@@ -97,5 +97,4 @@ class ::ActiverecordHoarder::BatchCollector
   def update_query
     @batch_query = ::ActiverecordHoarder::BatchQuery.new(@model_class, lower_limit, upper_limit, include_lower: @include_lower_limit, include_upper: true)
   end
-
 end
