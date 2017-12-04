@@ -21,60 +21,52 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
   describe "public" do
     describe "in_batches" do
-      let(:delete_on_success) { false }
-      let(:limit_success) { true }
+      it "is removed" do
+        expect(subject).not_to respond_to?(:in_batches)
+      end
+    end
 
-      before do
-        allow(subject).to receive(:collect_batch).and_return(true, false)
-        allow(subject).to receive(:destroy_current_records!)
-        allow(subject).to receive(:find_limits).and_return(limit_success)
-        allow(subject).to receive(:update_limits_and_query)
-        allow(subject).to receive(:update_query)
+    describe "next" do
+      it "is implemented" do
+        expect(subject).to respond_to(:next)
       end
 
-      after do
-        subject.in_batches(delete_on_success: delete_on_success) {}
+      context "next batch is cached" do
+        it "does not hit the database"
       end
 
-      context "limits not found" do
-        let(:limit_success) { false }
-
-        it "exits early" do
-          expect(subject).not_to receive(:collect_batch)
-        end
+      context "next batch is not cached" do
+        it "retrieves the batch from database and caches it"
       end
 
-      context "limits found" do
-        let(:batch_success) { [true, true, false] }
+      it "returns next batch"
+      it "updates position"
+    end
 
-        before do
-          allow(subject).to receive(:collect_batch).and_return(*batch_success)
+    describe "next?" do
+      it "is implemented" do
+        expect(subject).to respond_to(:next?)
+      end
+
+      context "next batch is cached" do
+        it "does not hit the database"
+      end
+
+      context "next batch is not chached" do
+        it "hits the database"
+      end
+
+      context "limit is reached" do
+        it "returns false and caches empty batch"
+      end
+
+      context "limit is not yet reached" do
+        context "there are no more records" do
+          it "returns false and caches empty batch"
         end
 
-        it "creates a query and updates before every new batch" do
-          expect(subject).to receive(:update_query).ordered
-          expect(subject).to receive(:collect_batch).ordered
-          expect(subject).to receive(:update_limits_and_query).ordered
-          expect(subject).to receive(:collect_batch).ordered
-          expect(subject).to receive(:update_limits_and_query).ordered
-        end
-
-        it "yields batches until it runs out" do
-          expect(subject).to receive(:collect_batch).exactly(batch_success.length).times
-        end
-
-        context "deleting records" do
-          let(:delete_on_success) { true }
-
-          it "calls destroy_current_records!" do
-            expect(subject).to receive(:destroy_current_records!).twice
-          end
-        end
-
-        context "not deleting records" do
-          it "does not call destroy_current_records!" do
-            expect(subject).not_to receive(:destroy_current_records!)
-          end
+        context "further records exist" do
+          it "caches batch and returns true"
         end
       end
     end
