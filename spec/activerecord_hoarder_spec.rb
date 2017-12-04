@@ -142,9 +142,11 @@ RSpec.describe ActiverecordHoarder do
     before do
       allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
       allow(::ActiverecordHoarder::RecordCollector).to receive(:new).and_return(collector)
+      # stub method calls in in_batches
+      allow(collector).to receive(:find_limits).and_return(true)
+      allow(collector).to receive(:update_query)
+      allow(collector).to receive(:update_limits_and_query)
       allow(collector).to receive(:collect_batch).and_return(true, false)
-      allow(collector).to receive(:batch_data_cached?).and_return(true)
-      allow_any_instance_of(::ActiverecordHoarder::BatchArchiver).to receive(:compose_key).and_return("key")
       allow(collector).to receive(:destroy_current_records!)
     end
 
