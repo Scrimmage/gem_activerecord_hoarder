@@ -1,4 +1,4 @@
-class ::ActiverecordHoarder::RecordCollector
+class ::ActiverecordHoarder::BatchCollector
   def initialize(model_class, lower_limit_override: nil, max_count: nil)
     @include_lower_limit = true
     @lower_limit = lower_limit_override

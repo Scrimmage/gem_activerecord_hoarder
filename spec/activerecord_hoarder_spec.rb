@@ -141,12 +141,12 @@ RSpec.describe ActiverecordHoarder do
 
   describe "workflow" do
     let(:batch1) { double }
-    let(:collector) { ::ActiverecordHoarder::RecordCollector.new(ExampleHoarder) }
+    let(:collector) { ::ActiverecordHoarder::BatchCollector.new(ExampleHoarder) }
     let(:storage) { double }
 
     before do
       allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
-      allow(::ActiverecordHoarder::RecordCollector).to receive(:new).and_return(collector)
+      allow(::ActiverecordHoarder::BatchCollector).to receive(:new).and_return(collector)
       # stub method calls in in_batches
       allow(collector).to receive(:find_limits).and_return(true)
       allow(collector).to receive(:update_query)

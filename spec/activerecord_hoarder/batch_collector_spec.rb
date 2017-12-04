@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe ::ActiverecordHoarder::RecordCollector do
+RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
