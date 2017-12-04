@@ -1,14 +1,19 @@
 require "spec_helper"
 
 RSpec.describe ActiverecordHoarder do
+  FREEZE_TIME = (Date.today.beginning_of_week - 3).to_time(:utc).end_of_day
 
-  around(:all) do |example|
+  around(:each) do |example|
     current_zone = Time.zone
     Time.zone = "America/Chicago"
-    Timecop.freeze((Date.today.beginning_of_week - 3).to_time(:utc).end_of_day) do
+    Timecop.freeze(FREEZE_TIME) do
       example.run
     end
     Time.zone = current_zone
+  end
+
+  it "is tested with timecop" do
+    expect(Time.now).to eq(FREEZE_TIME)
   end
 
   it "has a version number" do
@@ -42,7 +47,7 @@ RSpec.describe ActiverecordHoarder do
     end
 
     context "with records only in current week" do
-      before do
+      before :each do
         @archivable_records = create_list(
           :examples_in_range,
           20,
@@ -63,7 +68,7 @@ RSpec.describe ActiverecordHoarder do
         expect(ExampleHoarder.unscoped.to_a).to include(*@non_archivable_records)
       end
 
-      it "archives previous days" do
+      it "archives days previous to #{FREEZE_TIME.beginning_of_day}" do
         expect(ExampleHoarder.unscoped.to_a).not_to include(*@archivable_records)
       end
     end
