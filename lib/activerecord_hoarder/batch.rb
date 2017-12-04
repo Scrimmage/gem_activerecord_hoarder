@@ -22,5 +22,9 @@ module ::ActiverecordHoarder
     def content_string
       @serializer.create_archive(@record_data)
     end
+
+    def present?
+      @record_data.present?
+    end
   end
 end
