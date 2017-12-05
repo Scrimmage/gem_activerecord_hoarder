@@ -242,6 +242,12 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
+    describe "connection" do
+      it "returns model database connection" do
+        expect(subject.send(:connection)).to eq(subject.instance_variable_get(:@model_class).connection)
+      end
+    end
+
     describe "batch_data_cached?" do
       context "batch cached" do
         before do
@@ -536,6 +542,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         end
 
         context "limit is not yet reached" do
+          let(:deletion_hash) { { database_connection: hoarder_connection, deletion_query: delete_query } }
           let(:limit_reached) { false }
 
           it "uses batch_query to retrieve batch_data" do
@@ -545,7 +552,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           end
 
           it "uses retrieved batch_data to return Batch instance" do
-            expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data)
+            expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data, deletion_hash)
             expect(subject.send(:retrieve_batch)).to be(batch_instance)
           end
         end
