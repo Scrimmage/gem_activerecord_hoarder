@@ -488,9 +488,12 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
       before do
         allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
+        allow(subject).to receive(:absolute_limit_reached?).and_return(limit_reached)
       end
 
       context "limit is reached" do
+        let(:limit_reached) { true }
+
         it "does not hit the database" do
           expect(hoarder_connection).not_to receive(:exec_query)
           subject.send(:retrieve_batch)
@@ -502,9 +505,12 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       context "limit is not yet reached" do
+        let(:limit_reached) { false }
+
         it "uses batch_query to retrieve batch_data" do
-          expect(batch_query).to receive(:fetch)
+          expect(batch_query).to receive(:fetch).and_return(fetch_query)
           expect(hoarder_connection).to receive(:exec_query).with(fetch_query)
+          subject.send(:retrieve_batch)
         end
 
         it "uses retrieved batch_data to return Batch instance" do
@@ -515,71 +521,77 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "update_absolute_upper_limit" do
+      before do
+        subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit_before)
+      end
+
       after do
-        subject.send(:update_absolute_upper_limit, success)
+        subject.send(:update_absolute_upper_limit)
         expect(subject.instance_variable_get(:@absolute_upper_limit)).to eq(absolute_upper_limit_expectation)
       end
 
-      context "success = false" do
-        let(:success) { false }
-        let(:absolute_upper_limit_expectation) { nil }
+      context "absolute_upper_limit already set" do
+        let(:absolute_upper_limit_before) { double("absolute_upper_limit") }
+        let(:absolute_upper_limit_expectation) { absolute_upper_limit_before }
 
-        it "returns and does nothing" do
+        it "does not change absolute_upper_limit" do
         end
       end
 
-      context "success = true" do
-        let(:success) {true}
+      context "absolute_upper_limit not yet set" do
+        let(:absolute_upper_limit_before) { nil }
+        let(:absolute_upper_limit_expectation) { absolute_upper_limit_new }
+        let(:absolute_upper_limit_new) { double("absolute_upper_limit_new") }
+        let(:lower_limit_override) { double("lower_limit", end_of_week: absolute_upper_limit_new) }
 
-        before do
-          subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit_before)
-        end
-
-        context "absolute_upper_limit already set" do
-          let(:absolute_upper_limit_before) { double("absolute_upper_limit") }
-          let(:absolute_upper_limit_expectation) { absolute_upper_limit_before }
-
-          it "does not change absolute_upper_limit" do
-          end
-        end
-
-        context "absolute_upper_limit not yet set" do
-          let(:absolute_upper_limit_before) { nil }
-          let(:absolute_upper_limit_expectation) { absolute_upper_limit_new }
-          let(:absolute_upper_limit_new) { double("absolute_upper_limit_new") }
-          let(:lower_limit_override) { double("lower_limit", end_of_week: absolute_upper_limit_new) }
-
-          it "sets absolute_upper_limit" do
-          end
+        it "sets absolute_upper_limit to end of lower_limit week" do
         end
       end
     end
 
     describe "update_limits" do
+      RSpec.shared_examples "update position" do
+        it "moves to the next interval starting at last upper_limit" do
+          subject.send(:update_limits, false)
+          expect(previous_upper_limit).not_to be(nil)
+          expect(subject.instance_variable_get(:@lower_limit)).to eq(previous_upper_limit)
+        end
+
+        it "sets limit inclusion" do
+          expect(subject.instance_variable_get(:@include_lower_limit)).to be(true)
+          subject.send(:update_limits, false)
+          expect(subject.instance_variable_get(:@include_lower_limit)).to be(false)
+        end
+      end
+
       let(:previous_upper_limit) { double("previous_upper_limit") }
-      let(:success) { double("success") }
 
       before do
         allow(subject).to receive(:update_absolute_upper_limit)
         allow(subject).to receive(:upper_limit).and_return(previous_upper_limit)
       end
 
-      it "updates absolute_upper_limit before using upper limit" do
-        expect(subject).to receive(:update_absolute_upper_limit).with(success).ordered
-        expect(subject).to receive(:upper_limit).ordered
-        subject.send(:update_limits, success)
+      context "updating absolute upper" do
+        let(:update_absolute) { true }
+
+        it "updates absolute_upper_limit before updating lower_limit to upper_limit" do
+          expect(subject).to receive(:update_absolute_upper_limit).ordered
+          expect(subject).to receive(:upper_limit).ordered
+          subject.send(:update_limits, update_absolute)
+        end
+
+        include_examples "update position"
       end
 
-      it "moves to the next interval starting at last outer_upper_limit" do
-        subject.send(:update_limits, success)
-        expect(previous_upper_limit).not_to be(nil)
-        expect(subject.instance_variable_get(:@lower_limit)).to eq(previous_upper_limit)
-      end
+      context "not updating absolute upper" do
+        let(:update_absolute) { false }
 
-      it "sets limit inclusion" do
-        expect(subject.instance_variable_get(:@include_lower_limit)).to be(true)
-        subject.send(:update_limits, success)
-        expect(subject.instance_variable_get(:@include_lower_limit)).to be(false)
+        it "does not update absolute_upper_limit" do
+          expect(subject).not_to receive(:update_absolute_upper_limit)
+          subject.send(:update_limits, update_absolute)
+        end
+
+        include_examples "update position"
       end
     end
 

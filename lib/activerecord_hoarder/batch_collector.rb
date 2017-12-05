@@ -90,7 +90,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def retrieve_batch
-    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached
+    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached?
     batch_data = @model_class.connection.exec_query(@batch_query.fetch)
     ::ActiverecordHoarder::Batch.from_records(batch_data)
   end
@@ -100,8 +100,8 @@ class ::ActiverecordHoarder::BatchCollector
     @absolute_upper_limit = @lower_limit.end_of_week
   end
 
-  def update_limits(success)
-    update_absolute_upper_limit if success
+  def update_limits(update_absolute)
+    update_absolute_upper_limit if update_absolute
     @lower_limit = upper_limit
     @include_lower_limit = false
   end
