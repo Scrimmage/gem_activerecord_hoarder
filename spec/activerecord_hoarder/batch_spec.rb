@@ -47,4 +47,30 @@ RSpec.describe ::ActiverecordHoarder::Batch do
       end
     end
   end
+
+  describe "valid?" do
+    it "is implemented" do
+      expect(described_class.instance_methods).to include(:valid?)
+    end
+
+    describe "function" do
+      let(:record_data) { [deleted_record, deleted_record, deleted_record] }
+      let(:deleted_record) { { 'deleted_at' => true } }
+
+      context "all records are deleted" do
+        it "returns true" do
+          expect(subject.valid?).to be(true)
+        end
+      end
+
+      context "some records are not-deleted" do
+        let(:record_data) { [deleted_record, non_deleted_record, deleted_record] }
+        let(:non_deleted_record) { { 'deleted_at' => nil } } 
+
+        it "returns false" do
+          expect(subject.valid?).to be(false)
+        end
+      end
+    end
+  end
 end

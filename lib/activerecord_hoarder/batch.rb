@@ -32,5 +32,13 @@ module ::ActiverecordHoarder
     def present?
       @record_data.present?
     end
+
+    def valid?
+      return false if !present?
+      @record_data.each do |record|
+        return false if record['deleted_at'].nil?
+      end
+      return true
+    end
   end
 end
