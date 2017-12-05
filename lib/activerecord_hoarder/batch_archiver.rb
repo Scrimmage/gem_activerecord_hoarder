@@ -5,9 +5,13 @@ class ::ActiverecordHoarder::BatchArchiver
   end
 
   def archive_batch
-    @batch_collector.in_batches(delete_on_success: true) do |batch|
-      success = @archive_storage.store_data(batch)
-      return if !success
+    while @batch_collector.next?
+      new_batch = @batch_collector.next_valid
+      if new_batch.present?
+        success = @archive_storage.store_data(new_batch)
+        return if !success
+        new_batch.delete_records!
+      end
     end
   end
 
