@@ -4,6 +4,11 @@ class ::ActiverecordHoarder::BatchCollector
     @lower_limit = lower_limit_override
     @model_class = model_class
     @max_count = max_count
+    find_limits && update_query
+  end
+
+  def destroy_current_records_if_valid!
+    @model_class.connection.exec_query(@batch_query.delete) if @batch.valid?
   end
 
   def next(with_absolute: false)
@@ -42,10 +47,6 @@ class ::ActiverecordHoarder::BatchCollector
 
   def batch_data_cached?
     @batch.present?
-  end
-
-  def destroy_current_records!
-    @model_class.connection.exec_query(@batch_query.delete)
   end
 
   def ensuring_new_records
@@ -90,7 +91,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def retrieve_batch
-    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached?
+    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached? || !@batch_query.present?
     batch_data = @model_class.connection.exec_query(@batch_query.fetch)
     ::ActiverecordHoarder::Batch.from_records(batch_data)
   end
