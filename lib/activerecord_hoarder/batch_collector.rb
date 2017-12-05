@@ -12,6 +12,10 @@ class ::ActiverecordHoarder::BatchCollector
     @batch
   end
 
+  def next?
+    next_batch.present?
+  end
+
   def next_valid
     valid_batch = next_batch.valid?
     @batch = valid_batch ? next_batch : ActiverecordHoarder::Batch.new([])
@@ -20,6 +24,10 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   private
+
+  def absolute_limit_reached?
+    [absolute_upper_limit, lower_limit].compact.min == absolute_upper_limit && absolute_upper_limit.present?
+  end
 
   def absolute_upper_limit
     @absolute_upper_limit
@@ -64,6 +72,14 @@ class ::ActiverecordHoarder::BatchCollector
     @lower_limit
   end
 
+  def next_batch
+    @next_batch ||= retrieve_batch
+  end
+
+  def next_batch_data_cached?
+    @next_batch.present?
+  end
+
   def upper_limit
     return relative_upper_limit if !absolute_upper_limit
     [relative_upper_limit, absolute_upper_limit].min
@@ -74,6 +90,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def retrieve_batch
+    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached
     batch_data = @model_class.connection.exec_query(@batch_query.fetch)
     ::ActiverecordHoarder::Batch.from_records(batch_data)
   end

@@ -2,7 +2,7 @@ module ActiverecordHoarder
   class BatchQuery
 
     SUBQUERY_CONDITION = <<~SQL.strip_heredoc
-      WHERE %{condition_column} >%{include_lower} "%{inner_lower_limit}" AND %{condition_column} <%{include_upper} "%{inner_upper_limit}"
+      WHERE %{condition_column} >%{include_lower} "%{lower_limit}" AND %{condition_column} <%{include_upper} "%{upper_limit}"
     SQL
 
     QUERY_TEMPLATE_FOR_DELETE = <<~SQL.strip_heredoc
@@ -18,11 +18,11 @@ module ActiverecordHoarder
       ;
     SQL
 
-    def initialize(model_class, inner_lower_limit, inner_upper_limit, include_lower: true, include_upper: true)
+    def initialize(model_class, lower_limit, upper_limit, include_lower: true, include_upper: true)
       @include_lower = include_lower ? "=" : ""
       @include_upper = include_upper ? "=" : ""
-      @inner_lower_limit = inner_lower_limit
-      @inner_upper_limit = inner_upper_limit
+      @lower_limit = lower_limit
+      @upper_limit = upper_limit
       @model_class = model_class
     end
 
@@ -32,20 +32,20 @@ module ActiverecordHoarder
         include_lower: @include_lower,
         include_upper: @include_upper,
         fields: fields,
-        inner_lower_limit: @inner_lower_limit,
-        inner_upper_limit: @inner_upper_limit,
+        lower_limit: @lower_limit,
+        upper_limit: @upper_limit,
         table_name: table_name,
       }
     end
 
-    def fetch
+    def fetch(upper_limit_override: nil, include_upper_override: nil)
       QUERY_TEMPLATE_FOR_FETCH % {
         condition_column: ::ActiverecordHoarder::Constants::TIME_LIMITING_COLUMN,
         include_lower: @include_lower,
-        include_upper: @include_upper,
+        include_upper: include_upper_override || @include_upper,
         fields: fields,
-        inner_lower_limit: @inner_lower_limit,
-        inner_upper_limit: @inner_upper_limit,
+        lower_limit: @lower_limit,
+        upper_limit: upper_limit_override || @upper_limit,
         table_name: table_name,
       }
     end

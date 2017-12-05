@@ -2,13 +2,13 @@ require "spec_helper"
 
 RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
-  let(:batch_instance) { double("batch_instance") }
+  let(:batch_instance) { double("batch_instance", present?: true) }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
-  let(:empty_batch) { double("empty_batch") }
+  let(:empty_batch) { double("empty_batch", present?: false) }
   let(:fetch_query) { "fetch_query" }
   let(:hoarder_class) { double("hoarder_class", connection: hoarder_connection) }
-  let(:hoarder_connection) { double("hoarder_connection", exec_quer: nil) }
+  let(:hoarder_connection) { double("hoarder_connection", exec_query: nil) }
   let(:lower_limit_override) { double("lower_limit_override", end_of_day: upper_limit_from_override) }
   let(:max_count) { nil }
   let(:upper_limit_from_override) { double("upper_limit_from_override") }
@@ -63,13 +63,33 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "next?" do
+      let(:next_batch) { batch_instance }
+
+      before do
+        allow(subject).to receive(:next_batch).and_return(next_batch)
+      end
+
       it "is implemented" do
         expect(subject).to respond_to(:next?)
       end
 
       it "uses next_batch functionality and checks result presence" do
-        expect(subject).to receive(:next_batch).and_return(batch_instance)
         expect(batch_instance).to receive(:present?)
+        subject.next?
+      end
+
+      context "there is a next batch" do
+        it "returns true" do
+          expect(subject.next?).to be(true)
+        end
+      end
+
+      context "there is no next batch" do
+        let(:next_batch) { empty_batch }
+
+        it "returns false" do
+          expect(subject.next?).to be(false)
+        end
       end
     end
 
@@ -132,6 +152,33 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
       it "returns stored upper limit" do
         expect(subject.send(:absolute_upper_limit)).to eq(absolute_upper_limit)
+      end
+    end
+
+    describe "absolute_limit_reached" do
+      let(:lower_limit_override) { 2 }
+      let(:absolute_upper_limit) { 3 }
+
+      before do
+        subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit)
+      end
+
+      it "is implemented" do
+        expect(subject.private_methods).to include(:absolute_limit_reached?)
+      end
+
+      context "lower_limit is below absolute_upper_limit" do
+        it "returns false" do
+          expect(subject.send(:absolute_limit_reached?)).to be(false)
+        end
+      end
+
+      context "lower_limit is not below absolute_upper_limit" do
+        let(:absolute_upper_limit) { 1 }
+
+        it "returns true" do
+          expect(subject.send(:absolute_limit_reached?)).to be(true)
+        end
       end
     end
 
@@ -311,66 +358,78 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "next_batch" do
       it "is implemented" do
-        expect(subject).to respond_to(:next_batch)
+        expect(subject.private_methods).to include(:next_batch)
       end
 
-      before do
-        expect(subject).to receive(:next_batch).and_call_original
-      end
-
-      context "next batch is cached" do
-        it "does not hit the database" do
-          expect(subject).not_to receive(:retrieve_batch)
-          subject.send(:next_batch)
+      describe "function" do
+        before do
+          expect(subject).to receive(:next_batch).and_call_original
         end
 
-        it "leaves the batch cached" do
-          expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
-          subject.send(:next_batch)
-          expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
+        context "next batch is cached" do
+          before do
+            subject.instance_variable_set(:@next_batch, batch_instance)
+          end
+
+          it "does not hit the database" do
+            expect(subject).not_to receive(:retrieve_batch)
+            subject.send(:next_batch)
+          end
+
+          it "leaves the batch cached" do
+            expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
+            subject.send(:next_batch)
+            expect(subject.instance_variable_get(:@next_batch)).to eq(batch_instance)
+          end
+
+          it "returns the next batch" do
+            expect(subject.send(:next_batch)).to eq(batch_instance)
+          end
         end
 
-        it "returns the next batch" do
+        context "next batch is not cached" do
+          it "hits the database" do
+            expect(subject).to receive(:retrieve_batch)
+            subject.send(:next_batch)
+          end
+
+          it "caches the next batch" do
+            expect(subject.send(:next_batch_data_cached?)).to be(false)
+            subject.send(:next_batch)
+            expect(subject.send(:next_batch_data_cached?)).to be(true)
+          end
+        end
+
+        it "returns next batch" do
           expect(subject.send(:next_batch)).to eq(batch_instance)
         end
-      end
-
-      context "next batch is not cached" do
-        it "hits the database" do
-          expect(subject).to receive(:retrieve_batch)
-          subject.send(:next_batch)
-        end
-
-        it "caches the next batch" do
-          expect(subject.send(:next_batch_data_cached?)).to be(false)
-          subject.send(:next_batch)
-          expect(subject.send(:next_batch_data_cached?)).to be(true)
-        end
-      end
-
-      it "returns next batch" do
-        expect(subject.send(:next_batch)).to eq(batch_instance)
       end
     end
 
     describe "next_batch_data_cached?" do
       it "is implemented" do
-        expect(subject).to respond_to(:next_batch_data_cached?)
+        expect(subject.private_methods).to include(:next_batch_data_cached?)
       end
 
-      before do
-        expect(subject).to receive(:next_batch_data_cached?)
-      end
-
-      context "next batch is cached" do
-        it "returns true" do
-          expect(subject.send(:next_batch_data_cached?)).to be(true)
+      describe "function" do
+        before do
+          expect(subject).to receive(:next_batch_data_cached?).and_call_original
         end
-      end
 
-      context "next batch is not cached" do
-        it "returns false" do
-          expect(subject.send(:next_batch_data_cached?)).to be(false)
+        context "next batch is cached" do
+          before do
+            subject.instance_variable_set(:@next_batch, batch_instance)
+          end
+
+          it "returns true" do
+            expect(subject.send(:next_batch_data_cached?)).to be(true)
+          end
+        end
+
+        context "next batch is not cached" do
+          it "returns false" do
+            expect(subject.send(:next_batch_data_cached?)).to be(false)
+          end
         end
       end
     end
