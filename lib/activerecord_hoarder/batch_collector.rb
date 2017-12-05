@@ -60,6 +60,12 @@ class ::ActiverecordHoarder::BatchCollector
     record_batch
   end
 
+  def delete_transaction
+    Proc.new do
+      connection.exec_query(@batch_query.delete)
+    end
+  end
+
   def find_limits
     @lower_limit ||= get_oldest_datetime
     lower_limit.present?
@@ -97,7 +103,7 @@ class ::ActiverecordHoarder::BatchCollector
   def retrieve_batch
     return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached? || !@batch_query.present?
     batch_data = connection.exec_query(@batch_query.fetch)
-    ::ActiverecordHoarder::Batch.from_records(batch_data, database_connection: connection, deletion_query: @batch_query.delete)
+    ::ActiverecordHoarder::Batch.from_records(batch_data, delete_transaction: delete_transaction)
   end
 
   def update_absolute_upper_limit

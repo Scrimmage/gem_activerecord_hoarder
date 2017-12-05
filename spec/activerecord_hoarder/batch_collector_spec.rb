@@ -304,6 +304,19 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
+    describe "delete_transaction" do
+      let(:delete_transaction) { subject.send(:delete_transaction) }
+
+      it "returns can be called" do
+        expect(delete_transaction).to respond_to(:call)
+      end
+
+      it "calls exec_query with delete_query on hoarder_connection" do
+        expect(hoarder_connection).to receive(:exec_query).with(delete_query)
+        delete_transaction.call
+      end
+    end
+
     describe "find_limits" do
       let(:limit_from_records) { nil }
       let(:lower_limit_override) { nil }
@@ -542,8 +555,13 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         end
 
         context "limit is not yet reached" do
-          let(:deletion_hash) { { database_connection: hoarder_connection, deletion_query: delete_query } }
+          let(:delete_transaction) { double("delete_transaction") }
+          let(:deletion_hash) { { delete_transaction: delete_transaction } }
           let(:limit_reached) { false }
+
+          before do
+            allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
+          end
 
           it "uses batch_query to retrieve batch_data" do
             expect(batch_query).to receive(:fetch).and_return(fetch_query)

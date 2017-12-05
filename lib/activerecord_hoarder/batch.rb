@@ -6,11 +6,10 @@ module ::ActiverecordHoarder
       record_data.present? ? new(record_data, **kwargs) : nil
     end
 
-    def initialize(record_data, database_connection: nil, deletion_query: nil)
+    def initialize(record_data, delete_transaction: nil)
       @record_data = record_data
       @serializer = ::ActiverecordHoarder::Serializer
-      @database_connection = database_connection
-      @deletion_query = deletion_query
+      @delete_transaction = delete_transaction
     end
 
     def content_string
@@ -22,9 +21,8 @@ module ::ActiverecordHoarder
     end
 
     def delete_records!
-      raise(NameError, "batch instantiated without query") if !@deletion_query.present?
-      raise(NameError, "batch instantiated without connection") if !@database_connection.present?
-      @database_connection.exec_query(@deletion_query)
+      raise(NameError, "batch instantiated without delete transaction") if !@delete_transaction.present?
+      @delete_transaction.call
     end
 
     def key
