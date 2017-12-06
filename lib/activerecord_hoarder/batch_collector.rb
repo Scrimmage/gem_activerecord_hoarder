@@ -44,9 +44,15 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def collect_batch
-    @batch = ensuring_new_records do
-      retrieve_batch
+    if absolute_limit_reached? || !@batch_query.present?
+      new_batch = ::ActiverecordHoarder::Batch.new([])
+    else
+      new_batch = ensuring_new_records do
+        retrieve_batch
+      end
     end
+
+    @batch = new_batch
   end
 
   def connection
@@ -56,7 +62,7 @@ class ::ActiverecordHoarder::BatchCollector
   def ensuring_new_records
     record_batch = yield
     return record_batch if @batch.nil?
-    return nil if @batch.date == record_batch.try(:date)
+    return ::ActiverecordHoarder::Batch.new([]) if @batch.date == record_batch.try(:date)
     record_batch
   end
 
@@ -107,7 +113,6 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def retrieve_batch
-    return ::ActiverecordHoarder::Batch.new([]) if absolute_limit_reached? || !@batch_query.present?
     batch_data = connection.exec_query(@batch_query.fetch)
     ::ActiverecordHoarder::Batch.from_records(batch_data, delete_transaction: delete_transaction)
   end

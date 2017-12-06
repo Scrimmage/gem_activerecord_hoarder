@@ -215,6 +215,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "collect_batch" do
+      let(:absolute_limit_reached) { false }
       let(:cached_batch) { double("cached_batch", date: date1 ) }
       let(:ensured_batch) { double("retrieved_batch", date: date2) }
       let(:date1) { double("earlier date") }
@@ -223,21 +224,40 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       before do
         allow(subject).to receive(:retrieve_batch).and_return(ensured_batch)
         subject.instance_variable_set(:@batch, cached_batch)
+        allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
       end
 
-      context "record not new" do
-        let(:date2) { date1 }
-
-        it "sets @batch to be 'nil' and returns nil" do
-          expect(subject.send(:collect_batch)).to be(nil)
-          expect(subject.instance_variable_get(:@batch)).to eq(nil)
+      RSpec.shared_examples "cache and return empty_batch" do
+        it "sets @batch to be an empty_batch and returns it" do
+          expect(subject.send(:collect_batch)).to be(empty_batch)
+          expect(subject.instance_variable_get(:@batch)).to eq(empty_batch)
         end
       end
 
-      context "record new" do
-        it "sets @batch from records and returns it" do
-          expect(subject.send(:collect_batch)).to be(ensured_batch)
-          expect(subject.instance_variable_get(:@batch)).to eq(ensured_batch)
+      context "limit reached" do
+        let(:absolute_limit_reached) { true }
+
+        include_examples "cache and return empty_batch"
+      end
+
+      context "batch_query not present" do
+        let(:batch_query) { nil }
+
+        include_examples "cache and return empty_batch"
+      end
+
+      context "limit not reached and batch_query present" do
+        context "record not new" do
+          let(:date2) { date1 }
+
+          include_examples "cache and return empty_batch"
+        end
+
+        context "record new" do
+          it "sets @batch from records and returns it" do
+            expect(subject.send(:collect_batch)).to be(ensured_batch)
+            expect(subject.instance_variable_get(:@batch)).to eq(ensured_batch)
+          end
         end
       end
     end
@@ -285,7 +305,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         let(:date_reference) { new_date }
 
         it "doesn't return new batch" do
-          expect(subject.send(:ensuring_new_records) { new_batch } ).to eq(nil)
+          expect(subject.send(:ensuring_new_records) { new_batch } ).to eq(empty_batch)
         end
       end
 
@@ -546,55 +566,23 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "retrieve_batch" do
       let(:batch_data) { double("batch_data") }
+      let(:delete_transaction) { double("delete_transaction") }
+      let(:deletion_hash) { { delete_transaction: delete_transaction } }
 
       before do
+        allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
         allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
-        allow(subject).to receive(:absolute_limit_reached?).and_return(limit_reached)
       end
 
-      context "batch_query is missing" do
-        let(:limit_reached) { false }
-        let(:batch_query) { nil }
-
-        it "returns empty_batch" do
-          expect(subject.send(:retrieve_batch)).to eq(empty_batch)
-        end
+      it "uses batch_query to retrieve batch_data" do
+        expect(batch_query).to receive(:fetch).and_return(fetch_query)
+        expect(hoarder_connection).to receive(:exec_query).with(fetch_query)
+        subject.send(:retrieve_batch)
       end
 
-      context "batch_query is not missing" do
-        context "limit is reached" do
-          let(:limit_reached) { true }
-
-          it "does not hit the database" do
-            expect(hoarder_connection).not_to receive(:exec_query)
-            subject.send(:retrieve_batch)
-          end
-
-          it "returns an empty batch" do
-            expect(subject.send(:retrieve_batch)).to be(empty_batch)
-          end
-        end
-
-        context "limit is not yet reached" do
-          let(:delete_transaction) { double("delete_transaction") }
-          let(:deletion_hash) { { delete_transaction: delete_transaction } }
-          let(:limit_reached) { false }
-
-          before do
-            allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
-          end
-
-          it "uses batch_query to retrieve batch_data" do
-            expect(batch_query).to receive(:fetch).and_return(fetch_query)
-            expect(hoarder_connection).to receive(:exec_query).with(fetch_query)
-            subject.send(:retrieve_batch)
-          end
-
-          it "uses retrieved batch_data to return Batch instance" do
-            expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data, deletion_hash)
-            expect(subject.send(:retrieve_batch)).to be(batch_instance)
-          end
-        end
+      it "uses retrieved batch_data to return Batch instance" do
+        expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data, deletion_hash)
+        expect(subject.send(:retrieve_batch)).to be(batch_instance)
       end
     end
 
