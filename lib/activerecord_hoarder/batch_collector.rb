@@ -12,7 +12,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def next(with_absolute: false)
-    @batch = next_batch
+    @batch = pop_next_batch
     update_limits(with_absolute)
     @batch
   end
@@ -22,8 +22,9 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def next_valid
-    valid_batch = next_batch.valid?
-    @batch = valid_batch ? next_batch : ActiverecordHoarder::Batch.new([])
+    batch_candidate = pop_next_batch
+    valid_batch = batch_candidate.valid?
+    @batch = valid_batch ? batch_candidate : ActiverecordHoarder::Batch.new([])
     update_limits(valid_batch)
     @batch
   end
@@ -93,6 +94,12 @@ class ::ActiverecordHoarder::BatchCollector
   def upper_limit
     return relative_upper_limit if !absolute_upper_limit
     [relative_upper_limit, absolute_upper_limit].min
+  end
+
+  def pop_next_batch
+    batch = next_batch
+    @next_batch = nil
+    batch
   end
 
   def relative_upper_limit

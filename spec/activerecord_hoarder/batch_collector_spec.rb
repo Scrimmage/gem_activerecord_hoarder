@@ -515,6 +515,22 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
+    describe "pop_next_batch" do
+      before do
+        subject.instance_variable_set(:@next_batch, batch_instance)
+      end
+
+      it "returns next_batch" do
+        expect(subject.send(:pop_next_batch)).to eq(batch_instance)
+      end
+
+      it "unsets cached" do
+        expect(subject.instance_variable_get(:@next_batch)).to be(batch_instance)
+        subject.send(:pop_next_batch)
+        expect(subject.instance_variable_get(:@next_batch)).to be(nil)
+      end
+    end
+
     describe "relative_upper_limit" do
       let(:lower_limit) { 3.days.ago }
       let(:relative_upper_limit) { lower_limit.end_of_day }
