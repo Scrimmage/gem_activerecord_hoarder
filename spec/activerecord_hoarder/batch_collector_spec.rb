@@ -12,9 +12,10 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
   let(:fetch_query) { "fetch_query" }
   let(:hoarder_class) { double("hoarder_class", connection: hoarder_connection) }
   let(:hoarder_connection) { double("hoarder_connection", exec_query: nil) }
-  let(:lower_limit_override) { double("lower_limit_override", end_of_day: upper_limit_from_override) }
+  let(:lower_limit_override) { double("lower_limit_override", end_of_day: upper_limit_from_override, end_of_week: absolute_upper_limit) }
   let(:max_count) { nil }
   let(:upper_limit_from_override) { double("upper_limit_from_override") }
+  let(:absolute_upper_limit) { double("absolute_upper_limit") }
 
   before do
     allow_any_instance_of(::ActiverecordHoarder::BatchCollector).to receive(:find_limits)
@@ -25,9 +26,11 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     allow(subject).to receive(:relative_upper_limit).and_return(upper_limit_from_override)
     allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
     allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
+    allow(subject).to receive(:next_batch).and_return(batch_instance)
     allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
     allow(lower_limit_override).to receive(:utc).and_return(lower_limit_override)
     allow(lower_limit_override).to receive(:beginning_of_day).and_return(lower_limit_override)
+    allow(subject).to receive(:upper_limit).and_return(upper_limit_from_override)
   end
 
   describe "accuracy" do
@@ -35,9 +38,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
   end
 
   describe "public" do
-    let(:first_lower_limit) { double("first_lower_limit") }
-    let(:first_upper_limit) { double("first_upper_limit") }
-
     describe "(removed) in_batches" do
       it "is removed" do
         expect(subject).not_to respond_to(:in_batches)
@@ -47,8 +47,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     describe "next" do
       before do
         expect(subject).to receive(:next).and_call_original
-        allow(subject).to receive(:next_batch).and_return(batch_instance)
-        allow(subject).to receive(:upper_limit).and_return(first_upper_limit)
       end
 
       it "uses retreival functionality implemented by next_batch" do
@@ -90,8 +88,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "next_valid" do
       before do
-        allow(subject).to receive(:next_batch).and_return(batch_instance)
-        allow(subject).to receive(:upper_limit).and_return(first_upper_limit)
       end
 
       context "invalid batch next" do
@@ -114,10 +110,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
       context "valid batch next" do
         let(:batch_instance) { double("valid batch", valid?: true) }
-
-        before do
-          allow(subject).to receive(:update_absolute_upper_limit)
-        end
 
         it "returns batch" do
           expect(subject.next_valid).to eq(batch_instance)
@@ -479,17 +471,11 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "upper_limit" do
-      before do
-        allow(subject).to receive(:relative_upper_limit).and_return(relative_upper_limit)
-        allow(subject).to receive(:absolute_upper_limit).and_return(absolute_upper_limit)
-      end
-
       context "absolute_upper_limit yet unknown" do
-        let(:relative_upper_limit) { double("relative_upper_limit") }
         let(:absolute_upper_limit) { nil }
 
         it "returns relative_upper_limit" do
-          expect(subject.send(:upper_limit)).to eq(relative_upper_limit)
+          expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
         end
       end
 
@@ -500,7 +486,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           let(:relative_upper_limit) { 3.days.ago }
 
           it "returns relative_upper_limit" do
-            expect(subject.send(:upper_limit)).to eq(relative_upper_limit)
+            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
           end
         end
 
@@ -508,7 +494,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           let(:relative_upper_limit) { 1.day.ago }
 
           it "returns absolute_upper_limit" do
-            expect(subject.send(:upper_limit)).to eq(absolute_upper_limit)
+            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
           end
         end
       end
