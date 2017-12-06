@@ -27,16 +27,12 @@ class ::ActiverecordHoarder::BatchCollector
 
   private
 
-  def absolute_limit_reached? # also add today here
-    if absolute_upper_limit.present?
-      lower_limit == absolute_upper_limit || [absolute_upper_limit, lower_limit].compact.min == absolute_upper_limit
-    else
-      false
-    end
+  def absolute_limit_reached?
+    lower_limit == absolute_upper_limit || [absolute_upper_limit, lower_limit].compact.min == absolute_upper_limit
   end
 
   def absolute_upper_limit
-    @absolute_upper_limit
+    [@absolute_upper_limit, 1.day.ago.utc.end_of_day].compact.min
   end
 
   def batch_data_cached?
@@ -86,7 +82,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def lower_limit
-    @lower_limit
+    @lower_limit.utc.beginning_of_day
   end
 
   def next_batch
@@ -119,7 +115,7 @@ class ::ActiverecordHoarder::BatchCollector
 
   def update_absolute_upper_limit
     return if @absolute_upper_limit.present?
-    @absolute_upper_limit = @lower_limit.end_of_week
+    @absolute_upper_limit = lower_limit.end_of_week
   end
 
   def update_limits(update_absolute)

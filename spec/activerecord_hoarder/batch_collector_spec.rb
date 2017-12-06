@@ -26,6 +26,8 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
     allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
     allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
+    allow(lower_limit_override).to receive(:utc).and_return(lower_limit_override)
+    allow(lower_limit_override).to receive(:beginning_of_day).and_return(lower_limit_override)
   end
 
   describe "accuracy" do
@@ -142,20 +144,42 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
   describe "private" do
     describe "absolute_upper_limit" do
-      let(:absolute_upper_limit) { double("absolute_upper_limit") }
+      let(:eoyesterday) { 1.day.ago.utc.end_of_day }
 
       before do
         subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit)
       end
 
-      it "returns stored upper limit" do
-        expect(subject.send(:absolute_upper_limit)).to eq(absolute_upper_limit)
+      context "no abs. upper limit given" do
+        let(:absolute_upper_limit) { nil }
+
+        it "returns end of yesterday" do
+          expect(subject.send(:absolute_upper_limit)).to eq(eoyesterday)
+        end
+      end
+
+      context "abs. upper limit given" do
+        context "abs. upper limit later than end of yesterday" do
+          let(:absolute_upper_limit) { Time.now.utc.beginning_of_day }
+
+          it "returns end of yesterday" do
+            expect(subject.send(:absolute_upper_limit)).to eq(eoyesterday)
+          end
+        end
+
+        context "abs. upper limit earlier than end of yesterday" do
+          let(:absolute_upper_limit) { 1.day.ago.utc.end_of_day - 1.second }
+          
+          it "returns absolute upper limit override" do
+            expect(subject.send(:absolute_upper_limit)).to eq(absolute_upper_limit)
+          end
+        end
       end
     end
 
     describe "absolute_limit_reached?" do
-      let(:lower_limit_override) { 2 }
-      let(:absolute_upper_limit) { 3 }
+      let(:lower_limit_override) { 1.day.ago - 1.second }
+      let(:absolute_upper_limit) { 1.day.ago }
 
       before do
         allow(subject).to receive(:absolute_limit_reached?).and_call_original
@@ -169,7 +193,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       context "lower_limit is not below absolute_upper_limit" do
-        let(:absolute_upper_limit) { lower_limit_override }
+        let(:absolute_upper_limit) { lower_limit_override - 1.day }
 
         it "returns true" do
           expect(subject.send(:absolute_limit_reached?)).to be(true)
@@ -297,22 +321,13 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "find_limits" do
-      let(:limit_from_records) { nil }
-      let(:lower_limit_override) { nil }
-
       before do
-        allow(subject).to receive(:get_oldest_datetime).and_return(limit_from_records)
+        allow(subject).to receive(:get_oldest_datetime).and_return(lower_limit_override)
         allow(subject).to receive(:find_limits).and_call_original
         subject.instance_variable_set(:@lower_limit_override, lower_limit_override)
       end
 
       context "with lower limit is overridden" do
-        let(:lower_limit_override) { double("lower_limit_override") }
-
-        before do
-          subject.instance_variable_set(:@lower_limit, lower_limit_override)
-        end
-
         it "does not modify lower limit and returns true" do
           expect(subject.send(:find_limits)).to eq(true)
           expect(subject.instance_variable_defined?(:@lower_limit)).to be(true)
@@ -322,17 +337,22 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       context "lower limit is not overridden" do
-        let(:limit_from_records) { double("limit_from_records") }
+        before do
+          subject.remove_instance_variable(:@lower_limit)
+        end
 
         it "sets inner_lower_limit from records and returns true" do
+          expect(subject.instance_variable_defined?(:@lower_limit)).to be(false)
           expect(subject.send(:find_limits)).to eq(true)
           expect(subject.instance_variable_defined?(:@lower_limit)).to be(true)
           expect(subject.instance_variable_get(:@lower_limit)).not_to eq(nil)
-          expect(subject.instance_variable_get(:@lower_limit)).to eq(limit_from_records)
+          expect(subject.instance_variable_get(:@lower_limit)).to eq(lower_limit_override)
         end
       end
 
       context "without any source for limits" do
+        let(:lower_limit_override) { nil }
+
         it "does not set inner_lower_limit and returns false" do
           expect(subject.send(:find_limits)).to eq(false)
           expect(subject.instance_variable_defined?(:@lower_limit)).to be(true)
@@ -512,7 +532,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "relative_upper_limit" do
       let(:lower_limit) { 3.days.ago }
-      let(:relative_upper_limit) { lower_limit + 1.day }
+      let(:relative_upper_limit) { (lower_limit + 1.day).utc.beginning_of_day }
 
       before do
         subject.instance_variable_set(:@lower_limit, lower_limit)
@@ -620,17 +640,18 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "update_query" do
-      let(:old_query) { double("old query") }
       let(:new_query) { double("new query") }
+      let(:old_query) { double("old query") }
+      let(:upper_limit) { double("upper_limit") }
 
       before do
-        allow(::ActiverecordHoarder::BatchQuery).to receive(:new).and_return(new_query)
         subject.instance_variable_set(:@batch_query, old_query)
         allow(subject).to receive(:update_query).and_call_original
+        allow(subject).to receive(:upper_limit).and_return(upper_limit)
       end
 
       it "reconstructs query" do
-        expect(::ActiverecordHoarder::BatchQuery).to receive(:new).with(hoarder_class, lower_limit_override, upper_limit_from_override, {include_lower: true, include_upper: true})
+        expect(::ActiverecordHoarder::BatchQuery).to receive(:new).with(hoarder_class, lower_limit_override, upper_limit, {include_lower: true, include_upper: true}).and_return(new_query)
         subject.send(:update_query)
         expect(subject.instance_variable_get(:@batch_query)).to be(new_query)
       end
