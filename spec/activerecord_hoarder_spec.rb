@@ -74,54 +74,64 @@ RSpec.describe ActiverecordHoarder do
     end
 
     context "with records in multiple weeks, non-deleted records mixed in and trailing" do
+      CURRENT_TIME = FREEZE_TIME
+      BEGINNING_OF_CURRENT_WEEK = CURRENT_TIME.getutc.beginning_of_week
+      BEGINNING_OF_LAST_WEEK = (CURRENT_TIME - 1.week).getutc.beginning_of_week
+      BEGINNING_OF_SECOND_ARCHIVABLE_RANGE = (BEGINNING_OF_LAST_WEEK + 4.days).beginning_of_day
+      DAY_PREVIOUS_TO_LAST_WEEK = (BEGINNING_OF_LAST_WEEK - 1.day).to_date
+      END_OF_FIRST_ARCHIVABLE_RANGE = (BEGINNING_OF_LAST_WEEK + 2.days).end_of_day
+      END_OF_LAST_WEEK = BEGINNING_OF_LAST_WEEK.end_of_week
+      MIXED_DAY_LAST_WEEK = (BEGINNING_OF_LAST_WEEK + 3.days).to_date
+
       before do
         @archivable_records = create_list(
           :examples_in_range,
           20,
           deleted: true,
-          end_time: (1.week.ago.getutc.beginning_of_week + 2.days).end_of_day,
-          start_time: 1.week.ago.getutc.beginning_of_week
+          end_time: END_OF_FIRST_ARCHIVABLE_RANGE,
+          start_time: BEGINNING_OF_LAST_WEEK
         ) + create_list(
           :examples_in_range,
           20,
           deleted: true,
-          end_time: 1.week.ago.getutc.end_of_week,
-          start_time: 1.week.ago.getutc.beginning_of_week + 4.days
+          end_time: END_OF_LAST_WEEK,
+          start_time: BEGINNING_OF_SECOND_ARCHIVABLE_RANGE
         )
         @non_archivable_records = create_list(
           :examples_on_date,
           2,
           deleted: true,
-          records_date: (1.week.ago.getutc.beginning_of_week - 1.day).to_date
+          records_date: DAY_PREVIOUS_TO_LAST_WEEK
         ) + create_list(
           :examples_on_date,
           1,
           deleted: false,
-          records_date: (1.week.ago.getutc.beginning_of_week - 1.day).to_date
+          records_date: DAY_PREVIOUS_TO_LAST_WEEK
         ) + create_list(
           :examples_on_date,
           4,
           deleted: true,
-          records_date: (1.week.ago.getutc.beginning_of_week + 3.days).to_date,
+          records_date: MIXED_DAY_LAST_WEEK,
         ) + create_list(
           :examples_on_date,
           2,
           deleted: false,
-          records_date: (1.week.ago.getutc.beginning_of_week + 3.days).to_date
+          records_date: MIXED_DAY_LAST_WEEK
         )
         @out_of_range_records = create_list(
           :examples_in_range,
           2,
           deleted: true,
-          end_time: Time.now,
-          start_time: Time.now.getutc.beginning_of_week
+          end_time: CURRENT_TIME,
+          start_time: BEGINNING_OF_CURRENT_WEEK
         ) + create_list(
           :examples_in_range,
           2,
           deleted: false,
-          end_time: Time.now,
-          start_time: Time.now.getutc.beginning_of_week
+          end_time: CURRENT_TIME,
+          start_time: BEGINNING_OF_CURRENT_WEEK
         )
+        @all_records = @archivable_records + @non_archivable_records + @out_of_range_records
         ExampleHoarder.hoard
       end
 
@@ -130,7 +140,7 @@ RSpec.describe ActiverecordHoarder do
       end
 
       it "archives one week of fully deleted records" do
-        expect(ExampleHoarder.unscoped.to_a).not_to include(*@archivable_records)
+        expect(ExampleHoarder.unscoped.to_a).not_to include(*@archivable_records), "expected to not include archivable records in time range:\n#{BEGINNING_OF_LAST_WEEK} to #{END_OF_FIRST_ARCHIVABLE_RANGE} and #{BEGINNING_OF_SECOND_ARCHIVABLE_RANGE} to #{END_OF_LAST_WEEK}\n\n #{(@archivable_records.collect(&:id))}\nBut included:\n#{(ExampleHoarder.unscoped.to_a).collect(&:id)}\n\n and archived:\n#{(@all_records - ExampleHoarder.unscoped.to_a).collect(&:id)}\n\nOriginally included: \n #{@all_records.pretty_inspect}"
       end
 
       it "stops after one week" do
@@ -140,19 +150,15 @@ RSpec.describe ActiverecordHoarder do
   end
 
   describe "workflow" do
-    let(:batch1) { double }
+    let(:batch_instance) { double("batch", present?: true, delete_records!: nil) }
     let(:collector) { ::ActiverecordHoarder::BatchCollector.new(ExampleHoarder) }
     let(:storage) { double }
 
     before do
       allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
       allow(::ActiverecordHoarder::BatchCollector).to receive(:new).and_return(collector)
-      # stub method calls in in_batches
-      allow(collector).to receive(:find_limits).and_return(true)
-      allow(collector).to receive(:update_query)
-      allow(collector).to receive(:update_limits_and_query)
-      allow(collector).to receive(:collect_batch).and_return(true, false)
-      allow(collector).to receive(:destroy_current_records!)
+      allow(collector).to receive(:next?).and_return(true, true, false)
+      allow(collector).to receive(:next_valid).and_return(batch_instance)
     end
 
     after do
@@ -160,10 +166,10 @@ RSpec.describe ActiverecordHoarder do
     end
 
     it "fully processes one record batch before moving on to the next" do
-      expect(collector).to receive(:collect_batch)
+      expect(collector).to receive(:next_valid).and_return(batch_instance)
       expect(storage).to receive(:store_data).and_return(true)
-      expect(collector).to receive(:destroy_current_records!)
-      expect(collector).to receive(:collect_batch)
+      expect(batch_instance).to receive(:delete_records!)
+      expect(collector).to receive(:next_valid).and_return(nil)
     end
 
     it "does not delete a record that wasn't successfully archived" do
