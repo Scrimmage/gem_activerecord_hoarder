@@ -2,6 +2,7 @@ require "spec_helper"
 
 RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
+  let(:absolute_limit_reached) { false }
   let(:batch_instance) { double("batch_instance", present?: true, valid?: true) }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
@@ -19,6 +20,8 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     subject.instance_variable_set(:@batch_query, batch_query)
     allow(::ActiverecordHoarder::Batch).to receive(:from_records).and_return(batch_instance)
     allow(::ActiverecordHoarder::Batch).to receive(:new).and_return(empty_batch)
+    allow(subject).to receive(:relative_upper_limit).and_return(upper_limit_from_override)
+    allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
   end
 
   describe "accuracy" do
@@ -94,29 +97,14 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "next?" do
-      let(:next_batch) { batch_instance }
-
-      before do
-        allow(subject).to receive(:next_batch).and_return(next_batch)
-      end
-
-      it "is implemented" do
-        expect(subject).to respond_to(:next?)
-      end
-
-      it "uses next_batch functionality and checks result presence" do
-        expect(batch_instance).to receive(:present?)
-        subject.next?
-      end
-
-      context "there is a next batch" do
+      context "upper limit not reached" do
         it "returns true" do
           expect(subject.next?).to be(true)
         end
       end
 
-      context "there is no next batch" do
-        let(:next_batch) { empty_batch }
+      context "upper limit reached" do
+        let(:absolute_limit_reached) { true }
 
         it "returns false" do
           expect(subject.next?).to be(false)
@@ -191,16 +179,13 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
-    describe "absolute_limit_reached" do
+    describe "absolute_limit_reached?" do
       let(:lower_limit_override) { 2 }
       let(:absolute_upper_limit) { 3 }
 
       before do
+        allow(subject).to receive(:absolute_limit_reached?).and_call_original
         subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit)
-      end
-
-      it "is implemented" do
-        expect(subject.private_methods).to include(:absolute_limit_reached?)
       end
 
       context "lower_limit is below absolute_upper_limit" do
@@ -210,7 +195,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       context "lower_limit is not below absolute_upper_limit" do
-        let(:absolute_upper_limit) { 1 }
+        let(:absolute_upper_limit) { lower_limit_override }
 
         it "returns true" do
           expect(subject.send(:absolute_limit_reached?)).to be(true)
@@ -219,7 +204,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     end
 
     describe "collect_batch" do
-      let(:absolute_limit_reached) { false }
       let(:cached_batch) { double("cached_batch", date: date1 ) }
       let(:ensured_batch) { double("retrieved_batch", date: date2) }
       let(:date1) { double("earlier date") }
@@ -228,39 +212,36 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       before do
         allow(subject).to receive(:retrieve_batch).and_return(ensured_batch)
         subject.instance_variable_set(:@batch, cached_batch)
-        allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
       end
 
-      RSpec.shared_examples "cache and return empty_batch" do
+      RSpec.shared_examples "return empty_batch" do
         it "sets @batch to be an empty_batch and returns it" do
           expect(subject.send(:collect_batch)).to be(empty_batch)
-          expect(subject.instance_variable_get(:@batch)).to eq(empty_batch)
         end
       end
 
       context "limit reached" do
         let(:absolute_limit_reached) { true }
 
-        include_examples "cache and return empty_batch"
+        include_examples "return empty_batch"
       end
 
       context "batch_query not present" do
         let(:batch_query) { nil }
 
-        include_examples "cache and return empty_batch"
+        include_examples "return empty_batch"
       end
 
       context "limit not reached and batch_query present" do
         context "record not new" do
           let(:date2) { date1 }
 
-          include_examples "cache and return empty_batch"
+          include_examples "return empty_batch"
         end
 
         context "record new" do
           it "sets @batch from records and returns it" do
             expect(subject.send(:collect_batch)).to be(ensured_batch)
-            expect(subject.instance_variable_get(:@batch)).to eq(ensured_batch)
           end
         end
       end
@@ -561,6 +542,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
       before do
         subject.instance_variable_set(:@lower_limit, lower_limit)
+        allow(subject).to receive(:relative_upper_limit).and_call_original
       end
 
       it "returns upper limit in respect to lower limit" do

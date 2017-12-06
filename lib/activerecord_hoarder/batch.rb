@@ -2,10 +2,6 @@ module ::ActiverecordHoarder
   class Batch
     RECORD_DATE_FIELD = "created_at"
 
-    def self.from_records(record_data, **kwargs)
-      record_data.present? ? new(record_data, **kwargs) : nil
-    end
-
     def initialize(record_data, delete_transaction: nil)
       @record_data = record_data
       @serializer = ::ActiverecordHoarder::Serializer
@@ -17,12 +13,17 @@ module ::ActiverecordHoarder
     end
 
     def date
-      @date ||= @record_data.first[RECORD_DATE_FIELD].to_date
+      @date ||= extract_date
     end
 
     def delete_records!
       raise(NameError, "batch instantiated without delete transaction") if !@delete_transaction.present?
       @delete_transaction.call
+    end
+
+    def extract_date
+      return nil if !@record_data.first.present?
+      @record_data.first[RECORD_DATE_FIELD].to_date
     end
 
     def key

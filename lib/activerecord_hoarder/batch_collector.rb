@@ -18,7 +18,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def next?
-    next_batch.present?
+    !absolute_limit_reached?
   end
 
   def next_valid
@@ -31,8 +31,12 @@ class ::ActiverecordHoarder::BatchCollector
 
   private
 
-  def absolute_limit_reached?
-    [absolute_upper_limit, lower_limit].compact.min == absolute_upper_limit && absolute_upper_limit.present?
+  def absolute_limit_reached? # also add today here
+    if absolute_upper_limit.present?
+      lower_limit == absolute_upper_limit || [absolute_upper_limit, lower_limit].compact.min == absolute_upper_limit
+    else
+      false
+    end
   end
 
   def absolute_upper_limit
@@ -51,8 +55,7 @@ class ::ActiverecordHoarder::BatchCollector
         retrieve_batch
       end
     end
-
-    @batch = new_batch
+    new_batch
   end
 
   def connection
@@ -67,9 +70,10 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def delete_transaction
-    Proc.new do
-      connection.exec_query(@batch_query.delete)
-    end
+    delete_query = @batch_query.delete.to_s
+    Proc.new {
+      connection.exec_query(delete_query)
+    }
   end
 
   def find_limits
@@ -109,12 +113,12 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def relative_upper_limit
-    lower_limit.end_of_day
+    lower_limit + 1.day
   end
 
   def retrieve_batch
     batch_data = connection.exec_query(@batch_query.fetch)
-    ::ActiverecordHoarder::Batch.from_records(batch_data, delete_transaction: delete_transaction)
+    ::ActiverecordHoarder::Batch.new(batch_data, delete_transaction: delete_transaction)
   end
 
   def update_absolute_upper_limit
@@ -124,7 +128,7 @@ class ::ActiverecordHoarder::BatchCollector
 
   def update_limits(update_absolute)
     update_absolute_upper_limit if update_absolute
-    @lower_limit = upper_limit
+    @lower_limit = relative_upper_limit
     @include_lower_limit = false
   end
 
