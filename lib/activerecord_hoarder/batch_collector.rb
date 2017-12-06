@@ -70,7 +70,7 @@ class ::ActiverecordHoarder::BatchCollector
 
   def find_limits
     @lower_limit ||= get_oldest_datetime
-    lower_limit.present?
+    @lower_limit.present?
   end
 
   def get_oldest_datetime
