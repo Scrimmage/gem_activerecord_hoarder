@@ -228,15 +228,15 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       context "record not new" do
         let(:date2) { date1 }
 
-        it "sets @batch to be 'nil' and returns false" do
-          expect(subject.send(:collect_batch)).to be(false)
+        it "sets @batch to be 'nil' and returns nil" do
+          expect(subject.send(:collect_batch)).to be(nil)
           expect(subject.instance_variable_get(:@batch)).to eq(nil)
         end
       end
 
       context "record new" do
-        it "sets @batch from records and returns true" do
-          expect(subject.send(:collect_batch)).to be(true)
+        it "sets @batch from records and returns it" do
+          expect(subject.send(:collect_batch)).to be(ensured_batch)
           expect(subject.instance_variable_get(:@batch)).to eq(ensured_batch)
         end
       end
@@ -404,6 +404,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       describe "function" do
         before do
           expect(subject).to receive(:next_batch).and_call_original
+          allow(subject).to receive(:collect_batch).and_return(batch_instance)
         end
 
         context "next batch is cached" do
@@ -412,7 +413,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           end
 
           it "does not hit the database" do
-            expect(subject).not_to receive(:retrieve_batch)
+            expect(subject).not_to receive(:collect_batch)
             subject.send(:next_batch)
           end
 
@@ -425,11 +426,15 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           it "returns the next batch" do
             expect(subject.send(:next_batch)).to eq(batch_instance)
           end
+
+          it "returns next batch" do
+            expect(subject.send(:next_batch)).to eq(batch_instance)
+          end
         end
 
         context "next batch is not cached" do
           it "hits the database" do
-            expect(subject).to receive(:retrieve_batch)
+            expect(subject).to receive(:collect_batch)
             subject.send(:next_batch)
           end
 
@@ -438,10 +443,10 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
             subject.send(:next_batch)
             expect(subject.send(:next_batch_data_cached?)).to be(true)
           end
-        end
 
-        it "returns next batch" do
-          expect(subject.send(:next_batch)).to eq(batch_instance)
+          it "returns next batch" do
+            expect(subject.send(:next_batch)).to eq(batch_instance)
+          end
         end
       end
     end

@@ -46,7 +46,6 @@ class ::ActiverecordHoarder::BatchCollector
     @batch = ensuring_new_records do
       retrieve_batch
     end
-    batch_data_cached?
   end
 
   def connection
@@ -84,7 +83,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def next_batch
-    @next_batch ||= retrieve_batch
+    @next_batch ||= collect_batch
   end
 
   def next_batch_data_cached?
