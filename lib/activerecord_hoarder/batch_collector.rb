@@ -13,7 +13,7 @@ class ::ActiverecordHoarder::BatchCollector
 
   def next(with_absolute: false)
     @batch = pop_next_batch
-    update_limits(with_absolute)
+    update_limits_and_query(with_absolute)
     @batch
   end
 
@@ -25,7 +25,7 @@ class ::ActiverecordHoarder::BatchCollector
     batch_candidate = pop_next_batch
     valid_batch = batch_candidate.valid?
     @batch = valid_batch ? batch_candidate : ActiverecordHoarder::Batch.new([])
-    update_limits(valid_batch)
+    update_limits_and_query(valid_batch)
     @batch
   end
 

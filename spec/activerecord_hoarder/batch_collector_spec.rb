@@ -2,7 +2,7 @@ require "spec_helper"
 
 RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
-  let(:batch_instance) { double("batch_instance", present?: true) }
+  let(:batch_instance) { double("batch_instance", present?: true, valid?: true) }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
   let(:empty_batch) { double("empty_batch", present?: false) }
@@ -87,10 +87,9 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         expect(subject.next).to eq(batch_instance)
       end
 
-      it "updates position" do
-        expect(subject.send(:lower_limit)).to eq(lower_limit_override)
+      it "updates limit and query" do
+        expect(subject).to receive(:update_limits_and_query)
         subject.next
-        expect(subject.send(:lower_limit)).to eq(first_upper_limit)
       end
     end
 
@@ -170,6 +169,11 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           expect(subject).to receive(:update_absolute_upper_limit)
           subject.next_valid
         end
+      end
+
+      it "updates limit and query" do
+        expect(subject).to receive(:update_limits_and_query)
+        subject.next_valid
       end
     end
   end
