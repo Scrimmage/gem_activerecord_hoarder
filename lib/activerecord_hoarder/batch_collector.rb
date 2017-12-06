@@ -7,10 +7,6 @@ class ::ActiverecordHoarder::BatchCollector
     find_limits && update_query
   end
 
-  def destroy_current_records_if_valid!
-    connection.exec_query(@batch_query.delete) if @batch.valid?
-  end
-
   def next(with_absolute: false)
     @batch = pop_next_batch
     update_limits_and_query(with_absolute)

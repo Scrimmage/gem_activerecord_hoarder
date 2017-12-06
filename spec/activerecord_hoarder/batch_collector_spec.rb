@@ -3,9 +3,11 @@ require "spec_helper"
 RSpec.describe ::ActiverecordHoarder::BatchCollector do
   subject { described_class.new(hoarder_class, lower_limit_override: lower_limit_override, max_count: max_count) }
   let(:absolute_limit_reached) { false }
+  let(:batch_data) { double("batch_data") }
   let(:batch_instance) { double("batch_instance", present?: true, valid?: true) }
   let(:batch_query) { double("batch_query", delete: delete_query, fetch: fetch_query) }
   let(:delete_query) { "delete_query" }
+  let(:delete_transaction) { double("delete_transaction") }
   let(:empty_batch) { double("empty_batch", present?: false) }
   let(:fetch_query) { "fetch_query" }
   let(:hoarder_class) { double("hoarder_class", connection: hoarder_connection) }
@@ -18,10 +20,12 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     allow_any_instance_of(::ActiverecordHoarder::BatchCollector).to receive(:find_limits)
     allow_any_instance_of(::ActiverecordHoarder::BatchCollector).to receive(:update_query)
     subject.instance_variable_set(:@batch_query, batch_query)
-    allow(::ActiverecordHoarder::Batch).to receive(:from_records).and_return(batch_instance)
-    allow(::ActiverecordHoarder::Batch).to receive(:new).and_return(empty_batch)
+    allow(::ActiverecordHoarder::Batch).to receive(:new).with(batch_data).and_return(batch_instance)
+    allow(::ActiverecordHoarder::Batch).to receive(:new).with([]).and_return(empty_batch)
     allow(subject).to receive(:relative_upper_limit).and_return(upper_limit_from_override)
     allow(subject).to receive(:absolute_limit_reached?).and_return(absolute_limit_reached)
+    allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
+    allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
   end
 
   describe "accuracy" do
@@ -35,36 +39,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     describe "(removed) in_batches" do
       it "is removed" do
         expect(subject).not_to respond_to(:in_batches)
-      end
-    end
-
-    describe "destroy_current_records_if_valid!" do
-      let(:current_batch) { double("validated batch", valid?: batch_valid) }
-
-      before do
-        subject.instance_variable_set(:@batch_query, batch_query)
-        subject.instance_variable_set(:@batch, current_batch)
-      end
-
-      after do
-        subject.send(:destroy_current_records_if_valid!)
-      end
-
-      context "current batch was valid" do
-        let(:batch_valid) { true }
-
-        it "uses batch_query to delete records" do
-          expect(batch_query).to receive(:delete)
-          expect(hoarder_connection).to receive(:exec_query).with(delete_query)
-        end
-      end
-
-      context "current batch is not valid" do
-        let(:batch_valid) { false }
-
-        it "will not delete the records" do
-          expect(hoarder_connection).not_to receive(:exec_query)
-        end
       end
     end
 
@@ -538,7 +512,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
 
     describe "relative_upper_limit" do
       let(:lower_limit) { 3.days.ago }
-      let(:relative_upper_limit) { lower_limit.end_of_day }
+      let(:relative_upper_limit) { lower_limit + 1.day }
 
       before do
         subject.instance_variable_set(:@lower_limit, lower_limit)
@@ -546,18 +520,15 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       it "returns upper limit in respect to lower limit" do
-        expect(subject.send(:relative_upper_limit)).to eq(relative_upper_limit)
+        expect(subject.send(:relative_upper_limit).iso8601(3)).to eq(relative_upper_limit.iso8601(3))
       end
     end
 
     describe "retrieve_batch" do
-      let(:batch_data) { double("batch_data") }
-      let(:delete_transaction) { double("delete_transaction") }
       let(:deletion_hash) { { delete_transaction: delete_transaction } }
 
       before do
-        allow(subject).to receive(:delete_transaction).and_return(delete_transaction)
-        allow(hoarder_connection).to receive(:exec_query).and_return(batch_data)
+        allow(::ActiverecordHoarder::Batch).to receive(:new).with(batch_data, deletion_hash).and_return(batch_instance)
       end
 
       it "uses batch_query to retrieve batch_data" do
@@ -567,7 +538,7 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
 
       it "uses retrieved batch_data to return Batch instance" do
-        expect(::ActiverecordHoarder::Batch).to receive(:from_records).with(batch_data, deletion_hash)
+        expect(::ActiverecordHoarder::Batch).to receive(:new).with(batch_data, deletion_hash)
         expect(subject.send(:retrieve_batch)).to be(batch_instance)
       end
     end
@@ -605,8 +576,8 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       RSpec.shared_examples "update position" do
         it "moves to the next interval starting at last upper_limit" do
           subject.send(:update_limits, false)
-          expect(previous_upper_limit).not_to be(nil)
-          expect(subject.instance_variable_get(:@lower_limit)).to eq(previous_upper_limit)
+          expect(upper_limit_from_override).not_to be(nil)
+          expect(subject.instance_variable_get(:@lower_limit)).to eq(upper_limit_from_override)
         end
 
         it "sets limit inclusion" do
@@ -616,19 +587,12 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         end
       end
 
-      let(:previous_upper_limit) { double("previous_upper_limit") }
-
-      before do
-        allow(subject).to receive(:update_absolute_upper_limit)
-        allow(subject).to receive(:upper_limit).and_return(previous_upper_limit)
-      end
-
       context "updating absolute upper" do
         let(:update_absolute) { true }
 
         it "updates absolute_upper_limit before updating lower_limit to upper_limit" do
           expect(subject).to receive(:update_absolute_upper_limit).ordered
-          expect(subject).to receive(:upper_limit).ordered
+          expect(subject).to receive(:relative_upper_limit).ordered
           subject.send(:update_limits, update_absolute)
         end
 
