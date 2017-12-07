@@ -35,7 +35,7 @@ RSpec.describe ::ActiverecordHoarder::Batch do
         let(:delete_transaction) { nil }
 
         it "raises an error" do
-          expect{ subject.delete_records! }.to raise_error(NameError, "batch instantiated without delete transaction")
+          expect{ subject.delete_records! }.to raise_error(ArgumentError, "expected delete_transaction argument if class instantiated without")
         end
       end
 

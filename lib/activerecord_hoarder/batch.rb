@@ -16,8 +16,9 @@ module ::ActiverecordHoarder
       @date ||= extract_date
     end
 
-    def delete_records!
-      raise(NameError, "batch instantiated without delete transaction") if !@delete_transaction.present?
+    def delete_records!(delete_transaction = nil)
+      delete_transaction = delete_transaction || @delete_transaction
+      raise(ArgumentError, "expected delete_transaction argument if class instantiated without") if !delete_transaction.present?
       @delete_transaction.call
     end
 
