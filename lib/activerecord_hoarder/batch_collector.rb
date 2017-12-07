@@ -1,9 +1,10 @@
 class ::ActiverecordHoarder::BatchCollector
   def initialize(model_class, lower_limit_override: nil, max_count: nil)
+    @count = 0
     @include_lower_limit = true
     @lower_limit = lower_limit_override
-    @model_class = model_class
     @max_count = max_count
+    @model_class = model_class
     find_limits && update_query
   end
 
@@ -14,15 +15,14 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def next
-    batch_candidate = pop_next_batch
-    valid_batch = batch_candidate.valid?
-    @batch = valid_batch ? batch_candidate : ActiverecordHoarder::Batch.new([])
-    update_limits_and_query(valid_batch)
+    pop_next_batch
+    update
     @batch
   end
 
   def next?
-    !absolute_limit_reached?
+    return !absolute_limit_reached? if @max_count.nil?
+    !absolute_limit_reached? && @count < @max_count
   end
 
   private
@@ -33,10 +33,6 @@ class ::ActiverecordHoarder::BatchCollector
 
   def absolute_upper_limit
     [@absolute_upper_limit, 1.day.ago.utc.end_of_day].compact.min
-  end
-
-  def batch_data_cached?
-    @batch.present?
   end
 
   def collect_batch
@@ -50,10 +46,6 @@ class ::ActiverecordHoarder::BatchCollector
     new_batch
   end
 
-  def connection
-    @model_class.connection
-  end
-
   def ensuring_new_records
     record_batch = yield
     return record_batch if @batch.nil?
@@ -64,7 +56,7 @@ class ::ActiverecordHoarder::BatchCollector
   def delete_transaction
     delete_query = @batch_query.delete.to_s
     Proc.new {
-      connection.exec_query(delete_query)
+      @model_class.connection.exec_query(delete_query)
     }
   end
 
@@ -89,19 +81,10 @@ class ::ActiverecordHoarder::BatchCollector
     @next_batch ||= collect_batch
   end
 
-  def next_batch_data_cached?
-    @next_batch.present?
-  end
-
-  def upper_limit
-    return relative_upper_limit if !absolute_upper_limit
-    [relative_upper_limit, absolute_upper_limit].min
-  end
-
   def pop_next_batch
     batch = next_batch
     @next_batch = nil
-    batch
+    @batch = batch.valid? ? batch : ActiverecordHoarder::Batch.new([])
   end
 
   def relative_upper_limit
@@ -109,7 +92,7 @@ class ::ActiverecordHoarder::BatchCollector
   end
 
   def retrieve_batch
-    batch_data = connection.exec_query(@batch_query.fetch)
+    batch_data = @model_class.connection.exec_query(@batch_query.fetch)
     ::ActiverecordHoarder::Batch.new(batch_data, delete_transaction: delete_transaction)
   end
 
@@ -118,18 +101,24 @@ class ::ActiverecordHoarder::BatchCollector
     @absolute_upper_limit = lower_limit.end_of_week
   end
 
-  def update_limits(update_absolute)
-    update_absolute_upper_limit if update_absolute
+  def update
+    @count += 1
+    update_limits
+    update_query
+  end
+
+  def update_limits
+    update_absolute_upper_limit if @batch.present?
     @lower_limit = relative_upper_limit
     @include_lower_limit = false
   end
 
-  def update_limits_and_query(success)
-    update_limits(success)
-    update_query
-  end
-
   def update_query
     @batch_query = ::ActiverecordHoarder::BatchQuery.new(@model_class, lower_limit, upper_limit, include_lower: @include_lower_limit, include_upper: true)
+  end
+
+  def upper_limit
+    return relative_upper_limit if !absolute_upper_limit
+    [relative_upper_limit, absolute_upper_limit].min
   end
 end

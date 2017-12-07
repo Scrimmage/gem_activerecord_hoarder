@@ -100,14 +100,14 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         end
       end
 
-      it "updates limit and query" do
-        expect(subject).to receive(:update_limits_and_query)
+      it "updates" do
+        expect(subject).to receive(:update)
         subject.next
       end
     end
 
     describe "next?" do
-      context "upper limit not reached" do
+      context "no upper limit not reached" do
         it "returns true" do
           expect(subject.next?).to be(true)
         end
@@ -117,6 +117,14 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         let(:absolute_limit_reached) { true }
 
         it "returns false" do
+          expect(subject.next?).to be(false)
+        end
+      end
+
+      context "max_count reached" do
+        let(:max_count) { 0 }
+
+        it "returns fase" do
           expect(subject.next?).to be(false)
         end
       end
@@ -222,35 +230,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           it "sets @batch from records and returns it" do
             expect(subject.send(:collect_batch)).to be(ensured_batch)
           end
-        end
-      end
-    end
-
-    describe "connection" do
-      it "returns model database connection" do
-        expect(subject.send(:connection)).to eq(subject.instance_variable_get(:@model_class).connection)
-      end
-    end
-
-    describe "batch_data_cached?" do
-      context "batch cached" do
-        before do
-          subject.instance_variable_set(:@batch, batch_instance)
-          expect(subject.instance_variable_get(:@batch)).not_to be(nil)
-        end
-
-        it "returns true" do
-          expect(subject.send(:batch_data_cached?)).to be(true)
-        end
-      end
-
-      context "batch not cached" do
-        before do
-          expect(subject.instance_variable_get(:@batch)).to be(nil)
-        end
-
-        it "returns false" do
-          expect(subject.send(:batch_data_cached?)).to be(false)
         end
       end
     end
@@ -419,71 +398,13 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
           end
 
           it "caches the next batch" do
-            expect(subject.send(:next_batch_data_cached?)).to be(false)
+            expect(subject.instance_variable_get(:@next_batch).present?).to be(false)
             subject.send(:next_batch)
-            expect(subject.send(:next_batch_data_cached?)).to be(true)
+            expect(subject.instance_variable_get(:@next_batch).present?).to be(true)
           end
 
           it "returns next batch" do
             expect(subject.send(:next_batch)).to eq(batch_instance)
-          end
-        end
-      end
-    end
-
-    describe "next_batch_data_cached?" do
-      it "is implemented" do
-        expect(subject.private_methods).to include(:next_batch_data_cached?)
-      end
-
-      describe "function" do
-        before do
-          expect(subject).to receive(:next_batch_data_cached?).and_call_original
-        end
-
-        context "next batch is cached" do
-          before do
-            subject.instance_variable_set(:@next_batch, batch_instance)
-          end
-
-          it "returns true" do
-            expect(subject.send(:next_batch_data_cached?)).to be(true)
-          end
-        end
-
-        context "next batch is not cached" do
-          it "returns false" do
-            expect(subject.send(:next_batch_data_cached?)).to be(false)
-          end
-        end
-      end
-    end
-
-    describe "upper_limit" do
-      context "absolute_upper_limit yet unknown" do
-        let(:absolute_upper_limit) { nil }
-
-        it "returns relative_upper_limit" do
-          expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
-        end
-      end
-
-      context "absolute_upper_limit known" do
-        let(:absolute_upper_limit) { 2.days.ago }
-
-        context "relative_upper_limit less than absolute_upper_limit" do
-          let(:relative_upper_limit) { 3.days.ago }
-
-          it "returns relative_upper_limit" do
-            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
-          end
-        end
-
-        context "relative_upper_limit more than absolute_upper_limit" do
-          let(:relative_upper_limit) { 1.day.ago }
-
-          it "returns absolute_upper_limit" do
-            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
           end
         end
       end
@@ -494,8 +415,20 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         subject.instance_variable_set(:@next_batch, batch_instance)
       end
 
-      it "returns next_batch" do
-        expect(subject.send(:pop_next_batch)).to eq(batch_instance)
+      context "batch is valid" do
+        it "sets batch to next_batch" do
+          expect(subject.instance_variable_get(:@batch)).to be(nil)
+          subject.send(:pop_next_batch)
+          expect(subject.instance_variable_get(:@batch)).to be(batch_instance)
+        end
+      end
+
+      context "batch is not valid" do
+        it "caches an empty batch" do
+          expect(subject.instance_variable_get(:@batch)).to be(nil)
+          subject.send(:pop_next_batch)
+          expect(subject.instance_variable_get(:@batch)).to be(batch_instance)
+        end
       end
 
       it "unsets cached" do
@@ -538,6 +471,20 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
+    describe "update" do
+      it "updates limits first, then update query" do
+        expect(subject).to receive(:update_limits).ordered
+        expect(subject).to receive(:update_query).ordered
+        subject.send(:update)
+      end
+
+      it "counts" do
+        expect(subject.instance_variable_get(:@count)).to eq(0)
+        subject.send(:update)
+        expect(subject.instance_variable_get(:@count)).to eq(1)
+      end
+    end
+
     describe "update_absolute_upper_limit" do
       before do
         subject.instance_variable_set(:@absolute_upper_limit, absolute_upper_limit_before)
@@ -570,47 +517,39 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
     describe "update_limits" do
       RSpec.shared_examples "update position" do
         it "moves to the next interval starting at last upper_limit" do
-          subject.send(:update_limits, false)
+          subject.send(:update_limits)
           expect(upper_limit_from_override).not_to be(nil)
           expect(subject.instance_variable_get(:@lower_limit)).to eq(upper_limit_from_override)
         end
 
         it "sets limit inclusion" do
           expect(subject.instance_variable_get(:@include_lower_limit)).to be(true)
-          subject.send(:update_limits, false)
+          subject.send(:update_limits)
           expect(subject.instance_variable_get(:@include_lower_limit)).to be(false)
         end
       end
 
       context "updating absolute upper" do
-        let(:update_absolute) { true }
+        before do
+          subject.instance_variable_set(:@batch, double("valid_batch", present?: true))
+        end
 
         it "updates absolute_upper_limit before updating lower_limit to upper_limit" do
           expect(subject).to receive(:update_absolute_upper_limit).ordered
           expect(subject).to receive(:relative_upper_limit).ordered
-          subject.send(:update_limits, update_absolute)
+          subject.send(:update_limits)
         end
 
         include_examples "update position"
       end
 
       context "not updating absolute upper" do
-        let(:update_absolute) { false }
-
         it "does not update absolute_upper_limit" do
           expect(subject).not_to receive(:update_absolute_upper_limit)
-          subject.send(:update_limits, update_absolute)
+          subject.send(:update_limits)
         end
 
         include_examples "update position"
-      end
-    end
-
-    describe "update_limits_and_query" do
-      it "updates limits first, then update query" do
-        expect(subject).to receive(:update_limits).ordered
-        expect(subject).to receive(:update_query).ordered
-        subject.send(:update_limits_and_query,nil)
       end
     end
 
@@ -629,6 +568,36 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         expect(::ActiverecordHoarder::BatchQuery).to receive(:new).with(hoarder_class, lower_limit_override, upper_limit, {include_lower: true, include_upper: true}).and_return(new_query)
         subject.send(:update_query)
         expect(subject.instance_variable_get(:@batch_query)).to be(new_query)
+      end
+    end
+
+    describe "upper_limit" do
+      context "absolute_upper_limit yet unknown" do
+        let(:absolute_upper_limit) { nil }
+
+        it "returns relative_upper_limit" do
+          expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
+        end
+      end
+
+      context "absolute_upper_limit known" do
+        let(:absolute_upper_limit) { 2.days.ago }
+
+        context "relative_upper_limit less than absolute_upper_limit" do
+          let(:relative_upper_limit) { 3.days.ago }
+
+          it "returns relative_upper_limit" do
+            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
+          end
+        end
+
+        context "relative_upper_limit more than absolute_upper_limit" do
+          let(:relative_upper_limit) { 1.day.ago }
+
+          it "returns absolute_upper_limit" do
+            expect(subject.send(:upper_limit)).to eq(upper_limit_from_override)
+          end
+        end
       end
     end
   end
