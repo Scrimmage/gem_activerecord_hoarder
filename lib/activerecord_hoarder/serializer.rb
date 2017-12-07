@@ -1,5 +1,5 @@
 class ::ActiverecordHoarder::Serializer
-  def self.create_archive(batch_data)
+  def self.serialize(batch_data)
     batch_data.to_json
   end
 

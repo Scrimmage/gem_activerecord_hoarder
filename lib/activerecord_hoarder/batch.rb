@@ -9,7 +9,7 @@ module ::ActiverecordHoarder
     end
 
     def content_string
-      @serializer.create_archive(@record_data)
+      @serializer.serialize(@record_data)
     end
 
     def date
