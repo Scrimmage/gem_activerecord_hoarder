@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 RSpec.shared_examples "limit inclusion" do |comparison, limit|
-  FULL_COMPARISON_TEMPLATE = "%{comparison} \"%{limit}\""
+  FULL_COMPARISON_TEMPLATE = "%{comparison} \'%{limit}\'"
 
   after do
     limit_regexp = Regexp.new(FULL_COMPARISON_TEMPLATE % {
