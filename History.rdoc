@@ -1,0 +1,18 @@
+=== 0.0.2
+==== New Features/Functional Changes
+* can specify a starting date for hoarding
+* can specify max count of records to be hoarded
+* there is a hoard_single method for hoarding only one batch of records
+* Batch validation is extracted from the Database layer into batch
+==== Bugfixes
+* empty batch date returns nil instead of failing
+==== Renames
+* record_collector -> batch_collector
+* record_query -> batch_query
+* serializer.create_archive -> serializer.serialize
+* batch_collector.in_batches -> batch_collector.each
+==== Refactors
+* Record deletion moved from BatchCollector to Batch
+
+=== 0.0.1
+Initial Release

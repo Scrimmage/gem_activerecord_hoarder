@@ -1,0 +1,5 @@
+
+=== TODO
+ * use Arel or similar to create Queries and sanitize SQL
+ * move all querying to Batch
+ * query for nil instead of checking each record individually for deleted_at: nil
