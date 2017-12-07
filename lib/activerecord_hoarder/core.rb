@@ -6,8 +6,13 @@ module ActiverecordHoarder::Core
   end
 
   module ClassMethods
-    def hoard
-      ::ActiverecordHoarder::BatchArchiver.new(self).archive_batch
+    def hoard(**kwargs) # :start_at_date, :max_count
+      ::ActiverecordHoarder::BatchArchiver.new(self, **kwargs).archive_batch
+    end
+
+    def hoard_single(**kwargs)
+      kwargs.merge(max_count: 1)
+      ::ActiverecordHoarder::BatchArchiver.new(self, **kwargs).archive_batch
     end
   end
 end
