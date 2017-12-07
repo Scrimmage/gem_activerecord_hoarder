@@ -158,7 +158,7 @@ RSpec.describe ActiverecordHoarder do
       allow(::ActiverecordHoarder::Storage).to receive(:new).and_return(storage)
       allow(::ActiverecordHoarder::BatchCollector).to receive(:new).and_return(collector)
       allow(collector).to receive(:next?).and_return(true, true, false)
-      allow(collector).to receive(:next_valid).and_return(batch_instance)
+      allow(collector).to receive(:next).and_return(batch_instance)
     end
 
     after do
@@ -166,10 +166,10 @@ RSpec.describe ActiverecordHoarder do
     end
 
     it "fully processes one record batch before moving on to the next" do
-      expect(collector).to receive(:next_valid).and_return(batch_instance)
+      expect(collector).to receive(:next).and_return(batch_instance)
       expect(storage).to receive(:store_data).and_return(true)
       expect(batch_instance).to receive(:delete_records!)
-      expect(collector).to receive(:next_valid).and_return(nil)
+      expect(collector).to receive(:next).and_return(nil)
     end
 
     it "does not delete a record that wasn't successfully archived" do

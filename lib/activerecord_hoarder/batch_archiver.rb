@@ -5,8 +5,7 @@ class ::ActiverecordHoarder::BatchArchiver
   end
 
   def archive_batch
-    while @batch_collector.next?
-      new_batch = @batch_collector.next_valid
+    @batch_collector.each do |new_batch|
       if new_batch.present?
         success = @archive_storage.store_data(new_batch)
         return if !success

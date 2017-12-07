@@ -44,24 +44,60 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
       end
     end
 
-    describe "next" do
+    describe "each" do
+      let(:batch1) { double("batch1") }
+      let(:batch2) { double("batch2") }
+      let(:batch3) { double("batch3") }
+      let(:batches) { [batch1, batch2, batch3] }
+
       before do
-        expect(subject).to receive(:next).and_call_original
+        allow(subject).to receive(:next?).and_return(true, true, true, false)
+        allow(subject).to receive(:next).and_return(*batches)
       end
 
-      it "uses retreival functionality implemented by next_batch" do
-        expect(subject).to receive(:next_batch)
-        subject.send(:next)
+      context "three archivable batches" do
+        it "yields all three successively" do
+          expect{ |b| subject.each(&b) }.to yield_successive_args(*batches)
+        end
+      end
+    end
+
+    describe "next" do
+      context "invalid batch next" do
+        let(:batch_instance) { double("invalid batch", valid?: false) }
+
+        it "returns empty batch" do
+          expect(subject.next).to eq(empty_batch)
+        end
+
+        it "caches empty batch" do
+          expect(subject.instance_variable_get(:@batch)).not_to eq(empty_batch)
+          subject.next
+          expect(subject.instance_variable_get(:@batch)).to eq(empty_batch)
+        end
+
+        it "does not update the absolute limit" do
+          expect(subject).not_to receive(:update_absolute_upper_limit)
+        end
       end
 
-      it "caches the batch" do
-        expect(subject.instance_variable_get(:@batch)).not_to be(batch_instance)
-        subject.send(:next)
-        expect(subject.instance_variable_get(:@batch)).to be(batch_instance)
-      end
+      context "valid batch next" do
+        let(:batch_instance) { double("valid batch", valid?: true) }
 
-      it "returns next batch" do
-        expect(subject.next).to eq(batch_instance)
+        it "returns batch" do
+          expect(subject.next).to eq(batch_instance)
+        end
+
+        it "caches batch" do
+          expect(subject.instance_variable_get(:@batch)).not_to eq(batch_instance)
+          subject.next
+          expect(subject.instance_variable_get(:@batch)).to eq(batch_instance)
+        end
+
+        it "updates the absolute limit" do
+          expect(subject).to receive(:update_absolute_upper_limit)
+          subject.next
+        end
       end
 
       it "updates limit and query" do
@@ -83,53 +119,6 @@ RSpec.describe ::ActiverecordHoarder::BatchCollector do
         it "returns false" do
           expect(subject.next?).to be(false)
         end
-      end
-    end
-
-    describe "next_valid" do
-      before do
-      end
-
-      context "invalid batch next" do
-        let(:batch_instance) { double("invalid batch", valid?: false) }
-
-        it "returns empty batch" do
-          expect(subject.next_valid).to eq(empty_batch)
-        end
-
-        it "caches empty batch" do
-          expect(subject.instance_variable_get(:@batch)).not_to eq(empty_batch)
-          subject.next_valid
-          expect(subject.instance_variable_get(:@batch)).to eq(empty_batch)
-        end
-
-        it "does not update the absolute limit" do
-          expect(subject).not_to receive(:update_absolute_upper_limit)
-        end
-      end
-
-      context "valid batch next" do
-        let(:batch_instance) { double("valid batch", valid?: true) }
-
-        it "returns batch" do
-          expect(subject.next_valid).to eq(batch_instance)
-        end
-
-        it "caches batch" do
-          expect(subject.instance_variable_get(:@batch)).not_to eq(batch_instance)
-          subject.next_valid
-          expect(subject.instance_variable_get(:@batch)).to eq(batch_instance)
-        end
-
-        it "updates the absolute limit" do
-          expect(subject).to receive(:update_absolute_upper_limit)
-          subject.next_valid
-        end
-      end
-
-      it "updates limit and query" do
-        expect(subject).to receive(:update_limits_and_query)
-        subject.next_valid
       end
     end
   end

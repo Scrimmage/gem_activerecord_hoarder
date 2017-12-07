@@ -7,22 +7,22 @@ class ::ActiverecordHoarder::BatchCollector
     find_limits && update_query
   end
 
-  def next(with_absolute: false)
-    @batch = pop_next_batch
-    update_limits_and_query(with_absolute)
-    @batch
+  def each(&batch_processing)
+    while next?
+      yield(send(:next))
+    end
   end
 
-  def next?
-    !absolute_limit_reached?
-  end
-
-  def next_valid
+  def next
     batch_candidate = pop_next_batch
     valid_batch = batch_candidate.valid?
     @batch = valid_batch ? batch_candidate : ActiverecordHoarder::Batch.new([])
     update_limits_and_query(valid_batch)
     @batch
+  end
+
+  def next?
+    !absolute_limit_reached?
   end
 
   private

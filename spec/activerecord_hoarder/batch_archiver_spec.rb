@@ -2,15 +2,15 @@ require 'spec_helper'
 
 RSpec.describe ::ActiverecordHoarder::BatchArchiver do
   subject { ::ActiverecordHoarder::BatchArchiver.new(ExampleHoarder, storage) }
-  let(:batch_collector) { double("@batch_collector") }
+  let(:batch_collector) { ::ActiverecordHoarder::BatchCollector.new(ExampleHoarder) }
   let(:batch_instance) { double("batch_instance", delete_records!: nil) }
   let(:storage) { double("storage") }
 
   before do
     allow(::ActiverecordHoarder::BatchCollector).to receive(:new).and_return(batch_collector)
-    allow(batch_collector).to receive(:next_valid)
     allow(storage).to receive(:store_data).and_return(true)
-    allow(batch_collector).to receive(:next_valid).and_return(batch_instance)
+    allow(batch_collector).to receive(:next).and_return(batch_instance)
+    allow(batch_collector).to receive(:next?).and_return(true)
   end
 
   it "creates instance that can archive_batch" do
@@ -38,13 +38,13 @@ RSpec.describe ::ActiverecordHoarder::BatchArchiver do
     describe "batch processing" do
       before do
         allow(batch_collector).to receive(:next?).and_return(true, true, true, false)
-        allow(batch_collector).to receive(:next_valid).and_return(batch1, batch2, batch3)
+        allow(batch_collector).to receive(:next).and_return(batch1, batch2, batch3)
       end
 
       it "receives the new batch" do
-        expect(batch_collector).to receive(:next_valid).and_return(batch1)
-        expect(batch_collector).to receive(:next_valid).and_return(batch2)
-        expect(batch_collector).to receive(:next_valid).and_return(batch3)
+        expect(batch_collector).to receive(:next).and_return(batch1)
+        expect(batch_collector).to receive(:next).and_return(batch2)
+        expect(batch_collector).to receive(:next).and_return(batch3)
       end
 
       it "stores the non_empty batches" do
