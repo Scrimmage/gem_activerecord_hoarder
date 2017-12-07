@@ -23,7 +23,7 @@ module ::ActiverecordHoarder
     end
 
     def extract_date
-      return nil if !@record_data.first.present?
+      return nil if !@record_data.any?
       @record_data.first[RECORD_DATE_FIELD].to_date
     end
 
@@ -32,7 +32,7 @@ module ::ActiverecordHoarder
     end
 
     def present?
-      @record_data.present?
+      @record_data.any?
     end
 
     def valid?

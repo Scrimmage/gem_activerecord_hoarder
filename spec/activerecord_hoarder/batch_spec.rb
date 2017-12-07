@@ -11,7 +11,7 @@ RSpec.describe ::ActiverecordHoarder::Batch do
     end
 
     context "record_data exists" do
-      let(:record_data) { double("record_data", present?: true) }
+      let(:record_data) { double("record_data", any?: true) }
 
       it "returns true" do
         expect(subject.present?).to be(true)
