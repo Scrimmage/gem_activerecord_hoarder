@@ -29,9 +29,18 @@ end
 ### 1.2  hoarding records
 from console:
 ```
-ExampleModel.hoard
+ExampleModel.hoard(options)
 ```
 will create S3 entries with keys: `<bucket_sub_dir>/<table_name = example_models>/<year>/<month>/<year>-<month>-<day>.json` and json formatted content
+
+To only archive a single batch of records do:
+```
+ExampleModel.hoard_single(options)
+```
+
+Options can be added to the options hash:
+ - start_at_date
+ - max_count
 
 ### 1.3 restoring records
 from console:
